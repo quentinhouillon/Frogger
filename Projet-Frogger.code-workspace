@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "backend"
+		},
+		{
+			"path": "frontend"
+		},
+		{
+			"path": "diagrams"
+		},
+		{
+			"name": "⚙️ Configuration Racine",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"backend": true,
+			"frontend": true,
+			"diagrams": true
+		}
+	}
+}
