@@ -1,4 +1,4 @@
-package model;
+package frogger.model;
 
 public abstract class Entity {
     protected int x;
