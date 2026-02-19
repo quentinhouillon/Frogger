@@ -11,13 +11,12 @@ public class Frog extends Entity {
 
     private FrogState state;
 
-    public Frog(float x, float y, float width, float height) {
+    public Frog(int x, int y, int width, int height) {
         super(x, y, width, height);
         this.state = FrogState.LIVING;
     }
 
-    @Override
-    public void update(float dt) {
+    public void update(int dt) {
 
     }
 

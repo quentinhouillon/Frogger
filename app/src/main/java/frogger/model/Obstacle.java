@@ -11,15 +11,13 @@ public class Obstacle extends Entity {
 
     private ObstacleType type;
 
-    public Obstacle(float x, float y, float width, float height, ObstacleType type) {
+    public Obstacle(int x, int y, int width, int height, ObstacleType type) {
         super(x, y, width, height);
         this.type = type;
     }
 
-    @Override
-    public void update(float dt) {
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
+    public void update(int dt) {
+
     }
 
     public ObstacleType getType() {

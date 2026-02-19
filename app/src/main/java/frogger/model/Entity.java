@@ -1,25 +1,47 @@
 package frogger.model;
 
 public abstract class Entity {
-    protected float x, y;
-    protected float width, height;
-    protected float vx, vy;
+    protected int x;
+    protected int y;
+    protected int width;
+    protected int height;
 
-    public Entity(float x, float y, float width, float height) {
+    public Entity(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
     }
 
-    public abstract void update(float dt);
+    public int getx() {
+        return x;
+    }
 
-    public float getX() { return x; }
-    public void setX(float x) { this.x = x; }
-    public float getY() { return y; }
-    public void setY(float y) { this.y = y; }
-    public float getWidth() { return width; }
-    public float getHeight() { return height; }
-    public void setVelocity(float vx, float vy) { this.vx = vx; this.vy = vy; }
+    public void setx(int x) {
+        this.x = x;
+    }
+
+    public int gety() {
+        return y;
+    }
+
+    public void sety(int y) {
+        this.y = y;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
 }
-
