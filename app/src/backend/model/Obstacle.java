@@ -1,4 +1,4 @@
-package frogger.model;
+package model;
 
 public class Obstacle extends Entity {
 
