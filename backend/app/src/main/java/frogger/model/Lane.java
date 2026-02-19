@@ -1,3 +1,5 @@
+package frogger.model;
+
 public class Lane {
 
     private int position;
