@@ -4,7 +4,7 @@ public class Obstacle extends Entity {
 
     enum ObstacleType {
         CAR,
-        LOG,
+        BUS,
         TURTLE,
         ALLIGATOR
     }
@@ -16,8 +16,8 @@ public class Obstacle extends Entity {
         this.type = type;
     }
 
-    public void update(int dt) {
-
+    public void update(int newX) {
+        super.setx(newX);
     }
 
     public ObstacleType getType() {
