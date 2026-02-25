@@ -4,7 +4,6 @@ public class Frog extends Entity {
 
     enum FrogState {
         LIVING,
-        MOVING,
         DEAD,
         WIN
     }
@@ -16,11 +15,18 @@ public class Frog extends Entity {
         this.state = FrogState.LIVING;
     }
 
-    public void update(int dt) {
-
+    public void update(int newX, int newY) {
+        if (state == FrogState.LIVING) {
+            super.setx(newX);
+            super.sety(newY);
+        }
     }
 
     public FrogState getState() {
         return this.state;
+    }
+
+    public void setState(FrogState state) {
+        this.state = state;
     }
 }
