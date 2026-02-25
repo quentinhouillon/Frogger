@@ -18,8 +18,8 @@ public class Frog extends Entity {
 
     public void update(int newX, int newY) {
         if (state == FrogState.LIVING) {
-            this.x = newX;
-            this.y = newY;
+            super.setx(newX);
+            super.sety(newY);
             state = FrogState.MOVING;
         }
     }
