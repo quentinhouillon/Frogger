@@ -2,22 +2,31 @@ package frogger.model;
 
 public class Obstacle extends Entity {
 
-    enum ObstacleType {
+    public enum ObstacleType {
         CAR,
         BUS,
         TURTLE,
         ALLIGATOR
     }
 
-    private ObstacleType type;
+    private final ObstacleType type;
+    private final int speed;
+    private final Lane.MovingDirection movingDirection;
 
-    public Obstacle(int x, int y, int width, int height, ObstacleType type) {
+
+    public Obstacle(float x, float y, int width, int height, ObstacleType type, int speed, Lane.MovingDirection movingDirection) {
         super(x, y, width, height);
         this.type = type;
+        this.speed = speed;
+        this.movingDirection = movingDirection;
     }
 
-    public void update(int newX) {
-        super.setx(newX);
+    public void update(float dt) {
+        if (this.movingDirection == Lane.MovingDirection.RIGHT) {
+            super.setX(super.getX() + this.speed * dt);
+        } else {
+            super.setX(super.getX() - this.speed * dt);
+        }
     }
 
     public ObstacleType getType() {

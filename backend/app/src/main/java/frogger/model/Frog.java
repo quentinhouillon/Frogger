@@ -10,15 +10,15 @@ public class Frog extends Entity {
 
     private FrogState state;
 
-    public Frog(int x, int y, int width, int height) {
+    public Frog(float x, float y, int width, int height) {
         super(x, y, width, height);
         this.state = FrogState.LIVING;
     }
 
-    public void update(int newX, int newY) {
+    public void update(float dt) {
         if (state == FrogState.LIVING) {
-            super.setx(newX);
-            super.sety(newY);
+            super.setX(super.getX() + 100 * dt);
+            super.setY(super.getY() - 100 * dt);
         }
     }
 
