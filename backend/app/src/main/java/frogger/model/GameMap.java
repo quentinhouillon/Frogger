@@ -8,7 +8,6 @@ public class GameMap {
 
     private Frog frog;
     private ArrayList<Lane> lanes;
-    private float timer = 0;
     private int score = 0;
 
     public GameMap() {

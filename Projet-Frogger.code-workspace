@@ -19,6 +19,7 @@
 			"backend": true,
 			"frontend": true,
 			"diagrams": true
-		}
+		},
+		"java.compile.nullAnalysis.mode": "automatic"
 	}
 }
