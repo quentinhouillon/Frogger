@@ -16,11 +16,19 @@ public class Frog extends Entity {
         this.state = FrogState.LIVING;
     }
 
-    public void update(int dt) {
-
+    public void update(int newX, int newY) {
+        if (state == FrogState.LIVING) {
+            this.x = newX;
+            this.y = newY;
+            state = FrogState.MOVING;
+        }
     }
 
     public FrogState getState() {
         return this.state;
+    }
+
+    public void setState(FrogState state) {
+        this.state = state;
     }
 }
