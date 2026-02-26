@@ -1,13 +1,24 @@
 package frogger.controller;
 
 import org.java_websocket.server.WebSocketServer;
+
+import com.google.gson.Gson;
+
+import frogger.model.Frog;
+import frogger.model.GameMap;
+
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.WebSocket;
 import java.net.InetSocketAddress;
 
 public class FroggerWebSocket extends WebSocketServer {
+    private GameMap gameMap;
+    private Gson gson;
+    
     public FroggerWebSocket(int port) {
         super(new InetSocketAddress(port));
+        gameMap = new GameMap();
+        gson = new Gson();
     }
     
     @Override
@@ -24,7 +35,15 @@ public class FroggerWebSocket extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        // Réception d'un mouvement
+        Frog frog = gameMap.getFrog();
+        
+        switch (message) {
+            case "UP": frog.setDirection(0, -1); break;
+            case "DOWN": frog.setDirection(0, 1); break;
+            case "LEFT": frog.setDirection(-1, 0); break;
+            case "RIGHT": frog.setDirection(1, 0); break;
+        }
+        
     }
 
     @Override

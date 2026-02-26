@@ -2,6 +2,11 @@ package frogger.model;
 
 public class Frog extends Entity {
 
+    private float speed = 250f;
+
+    private float directionX = 0f;
+    private float directionY = 0f;
+
     enum FrogState {
         LIVING,
         DEAD,
@@ -17,9 +22,18 @@ public class Frog extends Entity {
 
     public void update(float dt) {
         if (state == FrogState.LIVING) {
-            super.setX(super.getX() + 100 * dt);
-            super.setY(super.getY() - 100 * dt);
+            
+            float moveX = directionX * speed * dt;
+            float moveY = directionY * speed * dt;
+
+            super.setX(super.getX() + moveX);
+            super.setY(super.getY() + moveY);
         }
+    }
+
+    public void setDirection(float dx, float dy) {
+        this.directionX = dx;
+        this.directionY = dy;
     }
 
     public FrogState getState() {
