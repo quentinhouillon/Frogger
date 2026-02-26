@@ -42,6 +42,7 @@ public class FroggerWebSocket extends WebSocketServer {
             case "DOWN": frog.setDirection(0, 1); break;
             case "LEFT": frog.setDirection(-1, 0); break;
             case "RIGHT": frog.setDirection(1, 0); break;
+            case "STOP": frog.setDirection(0, 0); break;
         }
         
     }
@@ -55,5 +56,18 @@ public class FroggerWebSocket extends WebSocketServer {
     @Override
     public void onStart() {
         System.err.println("Serveur démarré avec succès !");
+    }
+
+    public void broadcastGameState() {
+
+        gameMap.update(16f / 1000f);
+
+        String jsonState = gson.toJson(gameMap);
+
+        broadcast(jsonState);
+    }
+    
+    public GameMap getGameMap() {
+        return gameMap;
     }
 }

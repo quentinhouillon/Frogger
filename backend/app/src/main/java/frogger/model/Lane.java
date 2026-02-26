@@ -36,6 +36,18 @@ public class Lane {
         return laneType;
     }
 
+    public MovingDirection getMovingDirection() {
+        return movingDirection;
+    }
+
+    public int getSpeed() {
+        return speed;
+    }
+
+    public int getPositionY() {
+        return positionY;
+    }
+
     public boolean getIsPassed() {
         return passed;
     }

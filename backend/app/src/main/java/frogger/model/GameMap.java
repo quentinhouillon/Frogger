@@ -36,12 +36,64 @@ public class GameMap {
 
         for (Lane lane : lanes) {
             lane.manageObstacle(dt);
+
+            boolean isSafeInRiver = false;
+
+            // 2. On vérifie tous les obstacles de la ligne
             for (Obstacle obstacle : lane.getObstacles()) {
+
                 if (checkCollision(frog, obstacle)) {
+                    // CAS 1 : Collision sur la ROUTE -> MORT
+                    if (lane.getLaneType() == Lane.LaneType.ROAD) {
+                        frog.setState(Frog.FrogState.DEAD);
+                        respawnFrog();
+                    }
+                    // CAS 2 : Collision sur la RIVIÈRE -> SAUVÉ (On monte sur le tronc)
+                    else if (lane.getLaneType() == Lane.LaneType.RIVER) {
+                        isSafeInRiver = true; // On a trouvé un tronc !
+
+                        // Logique de déplacement sur le tronc
+                        frog.setDirection(lane.getMovingDirection() == Lane.MovingDirection.RIGHT ? 1 : -1, 0);
+                        if (frog.getState() != Frog.FrogState.MOVING) {
+                            frog.setSpeed(lane.getSpeed());
+                        }
+                    }
+                }
+            }
+
+            // 3. Verdict pour la RIVIÈRE (Une fois qu'on a vérifié tous les obstacles)
+            // Si on est dans une rivière ET qu'on n'a touché aucun tronc -> NOYADE
+            if (lane.getLaneType() == Lane.LaneType.RIVER && !isSafeInRiver) {
+                // Vérifie si la grenouille est bien DANS cette ligne (en Y)
+                // C'est important, sinon elle meurt même si elle est sur l'herbe !
+                if (frog.getY() >= lane.getPositionY() && frog.getY() < lane.getPositionY() + 50) {
                     frog.setState(Frog.FrogState.DEAD);
                     respawnFrog();
                 }
             }
+
+            // for (Obstacle obstacle : lane.getObstacles()) {
+            // if (checkCollision(frog, obstacle)) {
+            // if (lane.getLaneType() == Lane.LaneType.ROAD) {
+            // frog.setState(Frog.FrogState.DEAD);
+            // respawnFrog();
+            // }
+            // else if (lane.getLaneType() == Lane.LaneType.RIVER) {
+            // frog.setDirection(lane.getMovingDirection() == Lane.MovingDirection.RIGHT ? 1
+            // : -1, 0);
+            // if(frog.getState() != Frog.FrogState.MOVING) {
+            // frog.setSpeed(lane.getSpeed());
+            // } else {
+            // frog.setSpeed(frog.getBASE_SPEED());
+            // }
+            // }
+            // } else {
+            // if(lane.getLaneType() == Lane.LaneType.RIVER) {
+            // frog.setState(Frog.FrogState.DEAD);
+            // respawnFrog();
+            // }
+            // }
+            // }
         }
 
         constrainFrog();
@@ -56,7 +108,7 @@ public class GameMap {
 
     private void respawnFrog() {
         frog.setX(SCREEN_WIDTH / 2 - 20);
-        frog.setY(SCREEN_HEIGHT);
+        frog.setY(SCREEN_HEIGHT - frog.getHeight());
     }
 
     private void constrainFrog() {
