@@ -21,6 +21,12 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Bibliothèque légère et performante pour les WebSockets
+    implementation 'org.java-websocket:Java-WebSocket:1.5.7'
+    
+    // Pour gérer le JSON (mouvements de la grenouille, positions des voitures)
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     // This dependency is used by the application.
     implementation libs.guava
 }
