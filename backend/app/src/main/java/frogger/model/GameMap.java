@@ -13,29 +13,21 @@ public class GameMap {
     public GameMap() {
         frog = new Frog(SCREEN_WIDTH / 2 - 20, SCREEN_HEIGHT, 40, 40);
         lanes = new ArrayList<>();
+
+        initLanes();
     }
 
-    public Frog getFrog() {
-        return frog;
-    }
-
-    public ArrayList<Lane> getLanes() {
-        return lanes;
-    }
-
-    public int getScore() {
-        return score;
+    private void initLanes() {
+        lanes.add(new Lane(Lane.LaneType.SAFE, 600, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.ROAD, 500, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.RIVER, 400, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.ROAD, 300, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.RIVER, 200, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.ROAD, 100, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
     }
 
     public void update(float dt) {
         frog.update(dt);
-
-        lanes.add(new Lane(Lane.LaneType.SAFE, 500, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
-        lanes.add(new Lane(Lane.LaneType.ROAD, 500, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
-        lanes.add(new Lane(Lane.LaneType.RIVER, 400, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
-        lanes.add(new Lane(Lane.LaneType.ROAD, 300, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
-        
-
 
         if (frog.getY() < 0) {
             score += 10;
@@ -86,4 +78,15 @@ public class GameMap {
         }
     }
 
+    public Frog getFrog() {
+        return frog;
+    }
+
+    public ArrayList<Lane> getLanes() {
+        return lanes;
+    }
+
+    public int getScore() {
+        return score;
+    }
 }
