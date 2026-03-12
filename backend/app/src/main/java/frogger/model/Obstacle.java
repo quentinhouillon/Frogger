@@ -6,7 +6,8 @@ public class Obstacle extends Entity {
         CAR,
         BUS,
         TURTLE,
-        ALLIGATOR
+        ALLIGATOR,
+        WATERLILY
     }
 
     private final ObstacleType type;
@@ -22,10 +23,12 @@ public class Obstacle extends Entity {
     }
 
     public void update(float dt) {
-        if (this.movingDirection == Lane.MovingDirection.RIGHT) {
-            super.setX(super.getX() + this.speed * dt);
-        } else {
-            super.setX(super.getX() - this.speed * dt);
+        if (this.type != ObstacleType.WATERLILY) {
+            if (this.movingDirection == Lane.MovingDirection.RIGHT) {
+                super.setX(super.getX() + this.speed * dt);
+            } else {
+                super.setX(super.getX() - this.speed * dt);
+            }
         }
     }
 
