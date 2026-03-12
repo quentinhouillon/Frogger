@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { wsService } from './services/WebsocketService'; // Assure-toi que le chemin est bon
 import type { GameState } from './types/GameTypes';
+import Frog from './components/Frog';
 
 
 const Game: React.FC = () => {
@@ -66,15 +67,7 @@ const Game: React.FC = () => {
             ))}
 
             {/* Affiche la Grenouille */}
-            <div style={{
-                position: 'absolute',
-                left: gameState.frog.x,
-                top: gameState.frog.y,
-                width: gameState.frog.width,
-                height: gameState.frog.height,
-                backgroundColor: 'lime',
-                borderRadius: '50%'
-            }} />
+            <Frog data={gameState.frog} />
 
         </div>
     );
