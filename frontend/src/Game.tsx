@@ -85,8 +85,10 @@ const Game: React.FC = () => {
                     left: 0,
                     width: '100%',
                     height: 50, // Hauteur arbitraire, à ajuster selon ton backend
-                    borderBottom: '1px solid rgba(255,255,255,0.1)'
+                    borderBottom: '1px solid rgba(255,255,255,0.1)',
                     // Astuce : Ajoute une couleur de fond différente selon lane.type !
+                    background : lane.laneType === 'ROAD' ? 'gray' : 'blue'
+
                 }}>
                     {/* Affiche les Obstacles de cette ligne */}
                     {lane.obstacles.map((obs, i) => (

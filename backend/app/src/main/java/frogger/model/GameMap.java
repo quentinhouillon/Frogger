@@ -20,7 +20,7 @@ public class GameMap {
     private void initLanes() {
         lanes.add(new Lane(Lane.LaneType.SAFE, 600, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
         lanes.add(new Lane(Lane.LaneType.ROAD, 500, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
-        lanes.add(new Lane(Lane.LaneType.RIVER, 400, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
+        lanes.add(new Lane(Lane.LaneType.ROAD, 400, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
         lanes.add(new Lane(Lane.LaneType.ROAD, 300, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
         lanes.add(new Lane(Lane.LaneType.RIVER, 200, Lane.MovingDirection.LEFT, 150, SCREEN_WIDTH));
         lanes.add(new Lane(Lane.LaneType.ROAD, 100, Lane.MovingDirection.RIGHT, 100, SCREEN_WIDTH));
