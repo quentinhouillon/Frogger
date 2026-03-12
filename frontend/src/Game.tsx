@@ -25,6 +25,43 @@ const Game: React.FC = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    console.log("Up");
+                    wsService.send('UP');
+                    break;
+                case 'ArrowDown':
+                    console.log("Down");
+                    wsService.send('DOWN');
+                    break;
+                case 'ArrowLeft':
+                    console.log("Left");
+                    wsService.send('LEFT');
+                    break;
+                case 'ArrowRight':
+                    console.log("Right");
+                    wsService.send('RIGHT');
+                    break;
+            }
+        };
+
+        const handleKeyUp = (event: KeyboardEvent) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                wsService.send('STOP');
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
+
     // Si on n'a pas encore reçu de données
     if (!gameState) {
         return <div className="loading">Connexion au serveur Frogger...</div>;

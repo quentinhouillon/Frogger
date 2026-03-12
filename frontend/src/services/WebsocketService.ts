@@ -16,13 +16,14 @@ class WebSocketService {
         }
 
         console.log(`Tentative de connexion à ${url}...`);
-        this.socket = new WebSocket(url);
+        const ws = new WebSocket(url) 
+        this.socket = ws;
 
-        this.socket.onopen = () => {
+        ws.onopen = () => {
             console.log("WebSocket connecté !");
         };
 
-        this.socket.onmessage = (event) => {
+        ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 // On prévient tous les abonnés (les composants React)
@@ -32,9 +33,12 @@ class WebSocketService {
             }
         };
 
-        this.socket.onclose = () => {
+        ws.onclose = () => {
             console.log("WebSocket déconnecté.");
+            if (this.socket === ws) {
             this.socket = null;
+
+            }
         };
 
         this.socket.onerror = (error) => {
@@ -58,9 +62,9 @@ class WebSocketService {
         };
     }
 
-    send(message: object) {
+    send(message: string) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify(message));
+            this.socket.send(message);
         } else {
             console.warn("Impossible d'envoyer : WebSocket non connecté.");
         }
