@@ -4,10 +4,12 @@ public class Obstacle extends Entity {
 
     public enum ObstacleType {
         CAR,
-        BUS,
+        TRUCK,
         TURTLE,
-        ALLIGATOR,
-        WATERLILY
+        WOODLONG,
+        WOODSHORT,
+        WATERLILY,
+        NONE
     }
 
     private final ObstacleType type;
@@ -23,7 +25,7 @@ public class Obstacle extends Entity {
     }
 
     public void update(float dt) {
-        if (this.type != ObstacleType.WATERLILY) {
+        if (this.type != ObstacleType.WATERLILY && this.type != ObstacleType.NONE) {
             if (this.movingDirection == Lane.MovingDirection.RIGHT) {
                 super.setX(super.getX() + this.speed * dt);
             } else {

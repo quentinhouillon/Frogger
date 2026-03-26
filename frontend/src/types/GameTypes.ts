@@ -14,7 +14,7 @@ export interface Frog extends Entity {
 }
 
 export interface Obstacle extends Entity {
-    type: 'CAR' | 'BUS' | 'TURTLE' | 'ALLIGATOR';
+    type: 'CAR' | 'TRUCK' | 'TURTLE' | 'WOODLONG' | 'WOODSHORT' | 'WATERLILY' | 'NONE';
     speed: number;
     movingDirection: 'LEFT' | 'RIGHT';
 }
@@ -29,8 +29,8 @@ export interface Lane {
 }
 
 export interface GameState {
-    SCREEN_WIDTH: number;
-    SCREEN_HEIGHT: number;
+    screenWidth: number;
+    screenHeight: number;
     score: number;
     frog: Frog;
     lanes: Lane[];

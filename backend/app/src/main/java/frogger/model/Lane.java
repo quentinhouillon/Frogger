@@ -19,16 +19,18 @@ public class Lane {
     private final int speed;
     private final MovingDirection movingDirection;
     private final int width;
+    private final Obstacle.ObstacleType obstacleType;
 
     private float timeSinceLastObstacle = 0f;
     private static final float OBSTACLE_SPAWN_INTERVAL = 2f;
 
-    public Lane(LaneType laneType, int positionY, MovingDirection movingDirection, int speed, int width) {
+    public Lane(LaneType laneType, int positionY, MovingDirection movingDirection, int speed, int width, Obstacle.ObstacleType obstacleType) {
         this.laneType = laneType;
         this.positionY = positionY;
         this.movingDirection = movingDirection;
         this.speed = speed;
         this.width = width;
+        this.obstacleType = obstacleType;
         this.obstacles = new ArrayList<>();
     }
 
@@ -61,14 +63,22 @@ public class Lane {
     }
 
     public void manageObstacle(float dt) {
-        if (this.laneType != LaneType.SAFE) {
-            this.timeSinceLastObstacle += dt;
-            if (this.timeSinceLastObstacle >= OBSTACLE_SPAWN_INTERVAL) {
-                this.timeSinceLastObstacle = 0f;
-                this.obstacles.add(new Obstacle(this.movingDirection == MovingDirection.RIGHT ? 0 : this.width, this.positionY, 50, 50, Obstacle.ObstacleType.CAR, this.speed, this.movingDirection));
-            }
+        if (this.laneType == LaneType.SAFE) return;
 
-            obstacles.removeIf(obstacle -> obstacle.getX() > this.width || obstacle.getX() + obstacle.getWidth() < 0);
+        // Déplacement de tous les obstacles existants
+        for (Obstacle obstacle : this.obstacles) {
+            obstacle.update(dt);
         }
+
+        // Spawn d'un nouvel obstacle à intervalle régulier
+        this.timeSinceLastObstacle += dt;
+        if (this.timeSinceLastObstacle >= OBSTACLE_SPAWN_INTERVAL) {
+            this.timeSinceLastObstacle = 0f;
+            float spawnX = this.movingDirection == MovingDirection.RIGHT ? -50 : this.width;
+            this.obstacles.add(new Obstacle(spawnX, this.positionY + 10, 50, 30, this.obstacleType, this.speed, this.movingDirection));
+        }
+
+        // Suppression des obstacles sortis de l'écran
+        obstacles.removeIf(obstacle -> obstacle.getX() > this.width || obstacle.getX() + obstacle.getWidth() < 0);
     }
 }

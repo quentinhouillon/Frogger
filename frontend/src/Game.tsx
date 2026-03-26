@@ -1,113 +1,189 @@
 import React, { useEffect, useState } from 'react';
-import { wsService } from './services/WebsocketService'; // Assure-toi que le chemin est bon
+import { wsService } from './services/WebsocketService';
 import type { GameState } from './types/GameTypes';
 import Frog from './components/Frog';
+import Obstacle from './components/Obstacles';
+
+import roadSprite from './sprites/tile_road.png';
+import lakeSprite from './sprites/tile_water.png';
 
 
+
+const laneBgMap: Record<string, string> = {
+    ROAD:  `url(${roadSprite}) repeat-x center / auto 100%`,
+    RIVER: `url(${lakeSprite}) repeat-x center / auto 100%`,
+    SAFE:  'linear-gradient(135deg, #1a4a1a 0%, #2d6e2d 50%, #1a4a1a 100%)',
+};
+
+const frogStateLabel: Record<string, string> = {
+    LIVING: '🟢 En vie',
+    MOVING: '🔵 En mouvement',
+    DEAD:   '💀 Mort',
+    WIN:    '🏆 Victoire !',
+};
+
+/* ── Game ─────────────────────────────────────────── */
 const Game: React.FC = () => {
-    // Le State pour stocker les données reçues du serveur
     const [gameState, setGameState] = useState<GameState | null>(null);
 
     useEffect(() => {
-        // A. On lance la connexion
         wsService.connect('ws://localhost:8080');
-
-        // B. On s'abonne aux mises à jour
-        // Grâce à ton code, 'subscribe' nous renvoie une fonction de nettoyage !
-        const unsubscribe = wsService.subscribe((data: GameState) => {
-            setGameState(data);
-        });
-
-        // C. Nettoyage quand le composant est détruit
-        return () => {
-            unsubscribe();       // On arrête d'écouter
-            wsService.disconnect(); // On coupe le websocket
-        };
+        const unsubscribe = wsService.subscribe((data: GameState) => setGameState(data));
+        return () => { unsubscribe(); wsService.disconnect(); };
     }, []);
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            switch (event.key) {
-                case 'ArrowUp':
-                    console.log("Up");
-                    wsService.send('UP');
-                    break;
-                case 'ArrowDown':
-                    console.log("Down");
-                    wsService.send('DOWN');
-                    break;
-                case 'ArrowLeft':
-                    console.log("Left");
-                    wsService.send('LEFT');
-                    break;
-                case 'ArrowRight':
-                    console.log("Right");
-                    wsService.send('RIGHT');
-                    break;
-            }
+        const keyMap: Record<string, string> = {
+            ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
         };
-
-        const handleKeyUp = (event: KeyboardEvent) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-                wsService.send('STOP');
-            }
-        }
-
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (keyMap[e.key]) { e.preventDefault(); wsService.send(keyMap[e.key]); }
+        };
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (keyMap[e.key]) wsService.send('STOP');
+        };
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
-
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
     }, []);
 
-    // Si on n'a pas encore reçu de données
+    /* ── Loading ────────────────────────────────────── */
     if (!gameState) {
-        return <div className="loading">Connexion au serveur Frogger...</div>;
+        return (
+            <div className="min-h-screen w-screen flex items-center justify-center"
+                 style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="text-6xl animate-frog-bounce">🐸</div>
+                    <p className="font-[family-name:var(--font-orbitron)] text-base tracking-widest text-[#50ff8c]/70 animate-flicker m-0">
+                        Connexion au serveur Frogger…
+                    </p>
+                    <div className="flex gap-2">
+                        {[0, 1, 2].map(i => (
+                            <span key={i}
+                                  className={`w-2 h-2 rounded-full bg-[#50ff8c] animate-dot-pulse ${i === 1 ? 'dot-delay-1' : i === 2 ? 'dot-delay-2' : ''}`}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    // 2. Le Rendu
+    const isDead = gameState.frog.state === 'DEAD';
+    const isWin  = gameState.frog.state === 'WIN';
+    // Fallback to 600 in case backend doesn't yet send these fields
+    const canvasW = gameState.screenWidth  ?? 600;
+    const canvasH = gameState.screenHeight ?? 600;
+
     return (
-        <div className="game-container" style={{ position: 'relative', width: 600, height: 600, background: '#333', overflow: 'hidden' }}>
-            
-            {/* Affiche le Score */}
-            <div style={{ position: 'absolute', top: 10, left: 10, color: 'white', zIndex: 100 }}>
-                Score: {gameState.score}
+        /* ── Wrapper ──────────────────────────────────── */
+        <div className="min-h-screen w-screen flex flex-col items-center justify-center gap-4 select-none"
+             style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
+
+            {/* ── HUD ──────────────────────────────────────── */}
+            <div className="flex items-center justify-between w-full px-5 py-2.5 rounded-xl border border-[#50ff8c]/25 backdrop-blur-md"
+                 style={{
+                     background: 'rgba(0,20,10,0.75)',
+                     boxShadow: '0 0 20px rgba(80,255,140,0.1), inset 0 1px 0 rgba(255,255,255,0.05)',
+                     maxWidth: canvasW,
+                 }}>
+
+                {/* Score */}
+                <div className="flex flex-col items-center gap-0.5">
+                    <span className="font-[family-name:var(--font-orbitron)] text-[0.55rem] tracking-[0.2em] text-[#50ff8c]/55 uppercase">
+                        Score
+                    </span>
+                    <span className="font-[family-name:var(--font-orbitron)] text-lg font-bold text-white text-shadow-glow">
+                        {gameState.score}
+                    </span>
+                </div>
+
+                {/* Title */}
+                <div className="font-[family-name:var(--font-orbitron)] text-2xl font-black tracking-[0.15em] text-[#50ff8c] text-shadow-accent">
+                    🐸 FROGGER
+                </div>
+
+                {/* Status */}
+                <div className="flex flex-col items-center gap-0.5">
+                    <span className="font-[family-name:var(--font-orbitron)] text-[0.55rem] tracking-[0.2em] text-[#50ff8c]/55 uppercase">
+                        Status
+                    </span>
+                    <span className="font-[family-name:var(--font-orbitron)] text-[0.9rem] font-bold text-white text-shadow-glow">
+                        {frogStateLabel[gameState.frog.state] ?? gameState.frog.state}
+                    </span>
+                </div>
             </div>
 
-            {/* Affiche les Lignes (Lanes) */}
-            {gameState.lanes.map((lane, index) => (
-                // Ici, on pourrait appeler un composant <Lane />
-                <div key={index} style={{
-                    position: 'absolute',
-                    top: lane.positionY,
-                    left: 0,
-                    width: '100%',
-                    height: 50, // Hauteur arbitraire, à ajuster selon ton backend
-                    borderBottom: '1px solid rgba(255,255,255,0.1)',
-                    // Astuce : Ajoute une couleur de fond différente selon lane.type !
-                    background : lane.laneType === 'ROAD' ? 'gray' : 'blue'
+            {/* ── Canvas ───────────────────────────────────── */}
+            <div
+                className={[
+                    'relative overflow-hidden rounded-lg border-2 transition-shadow duration-400',
+                    isDead ? 'border-red-500/60 animate-shake' : isWin ? 'border-yellow-400/70' : 'border-[#50ff8c]/30',
+                ].join(' ')}
+                style={{
+                    width:  canvasW,
+                    height: canvasH,
+                    background: '#050e08',
+                    boxShadow: isDead
+                        ? '0 0 0 1px #000, 0 0 50px rgba(255,60,60,0.35), 0 8px 32px #000'
+                        : isWin
+                        ? '0 0 0 1px #000, 0 0 60px rgba(255,215,0,0.4), 0 8px 32px #000'
+                        : '0 0 0 1px #000, 0 0 40px rgba(80,255,140,0.12), 0 8px 32px #000',
+                }}
+            >
+                {/* Overlay GAME OVER */}
+                {isDead && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 animate-overlay-in"
+                         style={{ background: 'radial-gradient(ellipse at center, rgba(200,0,0,0.55) 0%, rgba(0,0,0,0.8) 70%)' }}>
+                        <span className="text-6xl animate-pulse-icon">💀</span>
+                        <p className="font-[family-name:var(--font-orbitron)] text-4xl font-black tracking-[0.2em] text-[#ff5555] m-0"
+                           style={{ textShadow: '0 0 20px #ff5555, 0 2px 0 rgba(0,0,0,0.5)' }}>
+                            GAME OVER
+                        </p>
+                    </div>
+                )}
 
-                }}>
-                    {/* Affiche les Obstacles de cette ligne */}
-                    {lane.obstacles.map((obs, i) => (
-                         // Ici, on pourrait appeler un composant <Obstacle />
-                        <div key={i} style={{
-                            position: 'absolute',
-                            left: obs.x,
-                            top: 0, // Relatif à la ligne
-                            width: obs.width,
-                            height: obs.height,
-                            backgroundColor: obs.type === 'CAR' ? 'red' : 'brown'
-                        }} />
-                    ))}
-                </div>
-            ))}
+                {/* Overlay VICTORY */}
+                {isWin && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 animate-overlay-in"
+                         style={{ background: 'radial-gradient(ellipse at center, rgba(255,200,0,0.45) 0%, rgba(0,0,0,0.8) 70%)' }}>
+                        <span className="text-6xl animate-pulse-icon">🏆</span>
+                        <p className="font-[family-name:var(--font-orbitron)] text-4xl font-black tracking-[0.2em] text-[#ffd700] m-0"
+                           style={{ textShadow: '0 0 20px #ffd700, 0 2px 0 rgba(0,0,0,0.5)' }}>
+                            VICTORY!
+                        </p>
+                    </div>
+                )}
 
-            {/* Affiche la Grenouille */}
-            <Frog data={gameState.frog} />
+                {/* Lanes */}
+                {gameState.lanes.map((lane, index) => (
+                    <div
+                        key={index}
+                        className="absolute left-0 w-full border-b border-black/40"
+                        style={{
+                            top:        lane.positionY,
+                            height:     50,
+                            background: laneBgMap[lane.laneType] ?? '#a38282ff',
+                        }}
+                    >
+                        {lane.obstacles.map((obs, i) => (
+                            <Obstacle key={i} data={obs} lanePositionY={lane.positionY} />
+                        ))}
+                    </div>
+                ))}
 
+                {/* Frog */}
+                <Frog data={gameState.frog} />
+            </div>
+
+            {/* ── Controls hint ──────────────────────────── */}
+            <p className="text-xs text-white/30 tracking-wide m-0">
+                <span className="font-[family-name:var(--font-orbitron)] text-[#50ff8c]/50 text-sm mr-1">↑ ↓ ← →</span>
+                pour déplacer la grenouille
+            </p>
         </div>
     );
 };

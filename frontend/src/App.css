@@ -1,44 +1,70 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500&display=swap');
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+/* ── Design tokens ────────────────────────────── */
+@theme {
+  --font-orbitron: 'Orbitron', monospace;
+  --font-inter:    'Inter', system-ui, sans-serif;
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  --color-game-bg:      #000508;
+  --color-game-accent:  #50ff8c;
+  --color-game-red:     #ff5555;
+  --color-game-gold:    #ffd700;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* ── Keyframe animations (Tailwind can't generate these) ── */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+@keyframes frog-bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-14px); }
 }
 
-.card {
-  padding: 2em;
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1.2); opacity: 1; }
 }
 
-.read-the-docs {
-  color: #888;
+@keyframes overlay-in {
+  from { opacity: 0; transform: scale(1.05); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-icon {
+  from { transform: scale(1); }
+  to   { transform: scale(1.15); }
+}
+
+@keyframes dead-flash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Custom animation utilities ────────────────── */
+@layer utilities {
+  .animate-shake         { animation: shake 0.4s ease; }
+  .animate-frog-bounce   { animation: frog-bounce 0.8s ease infinite alternate; }
+  .animate-dot-pulse     { animation: dot-pulse 1.2s ease infinite; }
+  .animate-overlay-in    { animation: overlay-in 0.35s ease; }
+  .animate-pulse-icon    { animation: pulse-icon 1s ease infinite alternate; }
+  .animate-dead-flash    { animation: dead-flash 0.3s ease 3; }
+  .animate-flicker       { animation: flicker 2.5s ease infinite; }
+
+  .dot-delay-1 { animation-delay: 0.2s; }
+  .dot-delay-2 { animation-delay: 0.4s; }
+
+  .text-shadow-accent { text-shadow: 0 0 10px #50ff8c, 0 0 30px rgba(80,255,140,0.4); }
+  .text-shadow-glow   { text-shadow: 0 0 8px rgba(80,255,140,0.5); }
 }
