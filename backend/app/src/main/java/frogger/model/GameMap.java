@@ -15,6 +15,7 @@ public class GameMap {
     private final ArrayList<Lane>  lanes;
     private final CollisionManager collisionManager;
     private final ScoreManager     scoreManager;
+    private int score;
 
     public GameMap() {
         float startY = SCREEN_HEIGHT - 40f;
@@ -22,6 +23,7 @@ public class GameMap {
         lanes            = LaneConfig.buildLanes(SCREEN_WIDTH);
         collisionManager = new CollisionManager();
         scoreManager     = new ScoreManager(startY);
+        score            = scoreManager.getScore();
     }
 
     public void update(float dt) {
@@ -49,6 +51,7 @@ public class GameMap {
 
         // 5. Score de progression
         scoreManager.onFrogMoved(frog.getY());
+        score = scoreManager.getScore();
 
         // 6. Contraintes de l'écran
         constrainFrog();
