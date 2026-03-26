@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Lane {
 
     public enum LaneType {
-        ROAD, RIVER, SAFE
+        ROAD, RIVER, SAFE, WATERLITY_BUSH
     }
 
     public enum MovingDirection {

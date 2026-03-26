@@ -5,7 +5,7 @@ import java.util.ArrayList;
 /**
  * Gère toutes les collisions entre la grenouille et les obstacles.
  *
- * Route  → mort immédiate.
+ * Route → mort immédiate.
  * Rivière avec tronc/tortue → la grenouille dérive avec l'obstacle (drift).
  * Rivière sans tronc/tortue → noyade.
  */
@@ -14,12 +14,14 @@ public class CollisionManager {
     private static final int LANE_HEIGHT = 50;
 
     /**
-     * @param dt delta time en secondes (nécessaire pour calculer la dérive du tronc)
+     * @param dt delta time en secondes (nécessaire pour calculer la dérive du
+     *           tronc)
      * @return true si la grenouille vient de mourir
      */
     public boolean update(Frog frog, ArrayList<Lane> lanes, float dt) {
         for (Lane lane : lanes) {
             boolean isSafeInRiver = false;
+            boolean isSafeOnWaterlily = false;
 
             for (Obstacle obstacle : lane.getObstacles()) {
                 if (collides(frog, obstacle)) {
@@ -37,6 +39,11 @@ public class CollisionManager {
                             frog.drift(dirX * lane.getSpeed() * dt);
                             break;
 
+                        case WATERLITY_BUSH:
+                            // Zone d'arrivée : la grenouille est en sécurité uniquement sur un nénuphar
+                            isSafeOnWaterlily = true;
+                            break;
+
                         default:
                             break;
                     }
@@ -45,8 +52,15 @@ public class CollisionManager {
 
             // Dans la rivière mais aucun tronc/tortue sous la grenouille → noyade
             if (lane.getLaneType() == Lane.LaneType.RIVER && !isSafeInRiver) {
-                float frogY = frog.getY();
-                if (frogY >= lane.getPositionY() && frogY < lane.getPositionY() + LANE_HEIGHT) {
+                if (isFrogInLane(frog, lane)) {
+                    frog.setState(Frog.FrogState.DEAD);
+                    return true;
+                }
+            }
+
+            // En zone d'arrivée, hors nénuphar → mort
+            if (lane.getLaneType() == Lane.LaneType.WATERLITY_BUSH && !isSafeOnWaterlily) {
+                if (isFrogInLane(frog, lane)) {
                     frog.setState(Frog.FrogState.DEAD);
                     return true;
                 }
@@ -56,11 +70,16 @@ public class CollisionManager {
         return false;
     }
 
+    private boolean isFrogInLane(Frog frog, Lane lane) {
+        float frogY = frog.getY();
+        return frogY >= lane.getPositionY() && frogY < lane.getPositionY() + LANE_HEIGHT;
+    }
+
     /** AABB : détecte si la grenouille touche un obstacle. */
     private boolean collides(Frog frog, Obstacle obstacle) {
-        return frog.getX()               < obstacle.getX() + obstacle.getWidth()  &&
-               frog.getX() + frog.getWidth()  > obstacle.getX()                   &&
-               frog.getY()               < obstacle.getY() + obstacle.getHeight() &&
-               frog.getY() + frog.getHeight() > obstacle.getY();
+        return frog.getX() < obstacle.getX() + obstacle.getWidth() &&
+                frog.getX() + frog.getWidth() > obstacle.getX() &&
+                frog.getY() < obstacle.getY() + obstacle.getHeight() &&
+                frog.getY() + frog.getHeight() > obstacle.getY();
     }
 }

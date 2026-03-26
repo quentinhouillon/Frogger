@@ -11,7 +11,6 @@ public class ScoreManager {
     private static final int LANE_HEIGHT = 50;
 
     private int score = 0;
-    private int maxlanesProgressed = 0;
 
     // Le Y le plus haut (petit) atteint par la grenouille lors de la tentative en
     // cours.
@@ -31,12 +30,10 @@ public class ScoreManager {
     public void onFrogMoved(float currentY) {
         if (currentY < maxYReached) {
             int lanesProgressed = (int) ((maxYReached - currentY) / LANE_HEIGHT);
-            if (lanesProgressed > maxlanesProgressed) {
-                maxlanesProgressed = lanesProgressed;
+            if (lanesProgressed > 0) {
                 score += lanesProgressed * POINTS_PER_LANE;
                 maxYReached = currentY;
             }
-            System.out.println(score);
         }
     }
 
