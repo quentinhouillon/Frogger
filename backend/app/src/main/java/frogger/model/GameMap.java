@@ -6,6 +6,8 @@ import java.util.ArrayList;
 public class GameMap {
     public static final int SCREEN_WIDTH  = 1000;
     public static final int SCREEN_HEIGHT = 650;
+    private static final int LANE_HEIGHT = 50;
+    private static final int MAX_LIFES = 3;
 
     // Champs d'instance pour la sérialisation Gson (qui ignore les statiques)
     private final int screenWidth  = SCREEN_WIDTH;
@@ -15,7 +17,9 @@ public class GameMap {
     private final ArrayList<Lane>  lanes;
     private final CollisionManager collisionManager;
     private final ScoreManager     scoreManager;
-    private int score;
+    private final int              maxLifes;
+    private int                    score;
+    private int                    lifes;
 
     public GameMap() {
         float startY = SCREEN_HEIGHT - 40f;
@@ -24,6 +28,8 @@ public class GameMap {
         collisionManager = new CollisionManager();
         scoreManager     = new ScoreManager(startY);
         score            = scoreManager.getScore();
+        lifes            = MAX_LIFES;
+        maxLifes         = MAX_LIFES;
     }
 
     public void update(float dt) {
@@ -34,13 +40,13 @@ public class GameMap {
 
         // 2. Détection des collisions (route / rivière + dérive du tronc)
         boolean isDead = collisionManager.update(frog, lanes, dt);
-        if (isDead) {
+        if (isDead && lifes > 0) {
             respawnFrog();
             return;
         }
 
-        // 3. Arrivée au sommet → score + respawn
-        if (frog.getY() < 0) {
+        // 3. Arrivée sur la zone nénuphars (si vivante) → score + respawn
+        if (frog.getY() >= 0 && frog.getY() < LANE_HEIGHT) {
             scoreManager.onFrogArrived();
             respawnFrog();
             return;
@@ -60,6 +66,7 @@ public class GameMap {
         frog.setY(SCREEN_HEIGHT - frog.getHeight());
         frog.setState(Frog.FrogState.LIVING);
         scoreManager.onFrogRespawn();
+        lifes--;
     }
 
     private void constrainFrog() {
