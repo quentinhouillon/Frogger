@@ -12,7 +12,7 @@ public class LaneConfig {
 
         // ── Route (5 lanes) ──────────────────────────────────── y=550..350
         lanes.add(new Lane(Lane.LaneType.ROAD,  550, Lane.MovingDirection.LEFT,  150, screenWidth, Obstacle.ObstacleType.CAR));
-        lanes.add(new Lane(Lane.LaneType.ROAD,  500, Lane.MovingDirection.RIGHT, 220, screenWidth, Obstacle.ObstacleType.CAR));
+        lanes.add(new Lane(Lane.LaneType.ROAD,  500, Lane.MovingDirection.RIGHT, 200, screenWidth, Obstacle.ObstacleType.CAR));
         lanes.add(new Lane(Lane.LaneType.ROAD,  450, Lane.MovingDirection.LEFT,   80, screenWidth, Obstacle.ObstacleType.TRUCK));
         lanes.add(new Lane(Lane.LaneType.ROAD,  400, Lane.MovingDirection.RIGHT, 180, screenWidth, Obstacle.ObstacleType.CAR));
         lanes.add(new Lane(Lane.LaneType.ROAD,  350, Lane.MovingDirection.LEFT,  130, screenWidth, Obstacle.ObstacleType.CAR));
