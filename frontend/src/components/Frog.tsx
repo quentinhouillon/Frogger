@@ -22,6 +22,7 @@ const Frog: React.FC<FrogProps> = ({ data }) => {
                 backgroundImage:   `url(${frogSprite})`,
                 backgroundSize:    '100% 100%',
                 backgroundRepeat:  'no-repeat',
+                border:            '1px solid red',
                 zIndex:            50,
                 filter: isDead
                     ? 'drop-shadow(0 0 8px #ff4444) saturate(0.3) brightness(0.6)'

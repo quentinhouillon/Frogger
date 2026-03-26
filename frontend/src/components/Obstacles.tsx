@@ -30,12 +30,12 @@ const Obstacle: React.FC<ObstacleProps> = ({ data, lanePositionY }) => {
                 top:               data.y - lanePositionY,
                 width:             data.width,
                 height:            data.height,
-                backgroundImage:   sprite ? `url(${sprite})` : undefined,
-                // backgroundColor:   'red',
-                backgroundSize:    '100% 100%',
-                backgroundRepeat:  'no-repeat',
-                zIndex:            50,
-                // filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))',
+                backgroundImage:    sprite ? `url(${sprite})` : undefined,
+                backgroundSize:     'contain',
+                backgroundRepeat:   'no-repeat',
+                backgroundPosition: 'center',
+                border:             '1px solid red',
+                zIndex:             50,
             }}
         />
     );

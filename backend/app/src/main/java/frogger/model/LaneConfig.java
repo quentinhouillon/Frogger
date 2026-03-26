@@ -2,21 +2,6 @@ package frogger.model;
 
 import java.util.ArrayList;
 
-/**
- * Configuration de la carte du jeu.
- * Reproduit le layout du Frogger original (Konami, 1981) :
- *   - 1 zone de départ (herbe)
- *   - 5 lanes de route
- *   - 1 zone médiane (herbe)
- *   - 5 lanes de rivière
- *   - 1 zone d'arrivée (herbe/nénuphars)
- *
- * Total : 13 lignes × 50px = 650px → SCREEN_HEIGHT = 650
- *
- * Directions et vitesses (px/s) inspirées de l'original :
- *   Route :  voitures rapides (←), camions lents (→), etc.
- *   Rivière : troncs lents (→), tortues moyennes (←), etc.
- */
 public class LaneConfig {
 
     public static ArrayList<Lane> buildLanes(int screenWidth) {

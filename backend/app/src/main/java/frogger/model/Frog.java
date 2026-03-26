@@ -34,7 +34,7 @@ public class Frog extends Entity {
     }
 
     public void setDirection(float dx, float dy) {
-        System.err.println("Direction set to " + dx + ", " + dy);
+        // System.err.println("Direction set to " + dx + ", " + dy);
         this.directionX = dx;
         this.directionY = dy;
     }
