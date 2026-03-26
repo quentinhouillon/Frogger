@@ -36,17 +36,47 @@ const Game: React.FC = () => {
         const keyMap: Record<string, string> = {
             ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
         };
+
+        // Délai avant que la répétition démarre (ms)
+        const INITIAL_DELAY_MS  = 200;
+        // Intervalle entre chaque saut répété (ms)
+        const REPEAT_INTERVAL_MS = 150;
+
+        let holdTimeout:    ReturnType<typeof setTimeout>  | null = null;
+        let repeatInterval: ReturnType<typeof setInterval> | null = null;
+
+        const stopRepeat = () => {
+            if (holdTimeout)    { clearTimeout(holdTimeout);   holdTimeout = null; }
+            if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
+        };
+
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (keyMap[e.key]) { e.preventDefault(); wsService.send(keyMap[e.key]); }
+            const cmd = keyMap[e.key];
+            if (!cmd) return;
+            e.preventDefault();
+
+            // Si une répétition est déjà en cours, on ignore (une seule direction à la fois)
+            if (holdTimeout || repeatInterval) return;
+
+            // 1. Saut immédiat
+            wsService.send(cmd);
+
+            // 2. Après le délai initial, sauts répétés tant que la touche est tenue
+            holdTimeout = setTimeout(() => {
+                repeatInterval = setInterval(() => wsService.send(cmd), REPEAT_INTERVAL_MS);
+            }, INITIAL_DELAY_MS);
         };
+
         const handleKeyUp = (e: KeyboardEvent) => {
-            if (keyMap[e.key]) wsService.send('STOP');
+            if (keyMap[e.key]) stopRepeat();
         };
+
         window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('keyup',   handleKeyUp);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('keyup',   handleKeyUp);
+            stopRepeat();
         };
     }, []);
 

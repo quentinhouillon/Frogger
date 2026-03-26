@@ -30,8 +30,12 @@ public class GameMap {
             lane.manageObstacle(dt);
         }
 
-        // 2. Déplacement de la grenouille
-        frog.update(dt);
+        // 2. Détection des collisions (route / rivière + dérive du tronc)
+        boolean isDead = collisionManager.update(frog, lanes, dt);
+        if (isDead) {
+            respawnFrog();
+            return;
+        }
 
         // 3. Arrivée au sommet → score + respawn
         if (frog.getY() < 0) {
@@ -40,17 +44,10 @@ public class GameMap {
             return;
         }
 
-        // 4. Détection des collisions (route / rivière)
-        boolean isDead = collisionManager.update(frog, lanes);
-        if (isDead) {
-            respawnFrog();
-            return;
-        }
-
-        // 5. Score de progression
+        // 4. Score de progression
         scoreManager.onFrogMoved(frog.getY());
 
-        // 6. Contraintes de l'écran
+        // 5. Contraintes de l'écran (empêche de sortir par les bords)
         constrainFrog();
     }
 
@@ -59,8 +56,6 @@ public class GameMap {
         frog.setX(SCREEN_WIDTH / 2f - 20);
         frog.setY(SCREEN_HEIGHT - frog.getHeight());
         frog.setState(Frog.FrogState.LIVING);
-        frog.setDirection(0, 0);
-        frog.setSpeed(frog.getBASE_SPEED());
         scoreManager.onFrogRespawn();
     }
 

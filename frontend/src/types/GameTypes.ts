@@ -6,11 +6,7 @@ export interface Entity {
 }
 
 export interface Frog extends Entity {
-    directionX: number;
-    directionY: number;
-    BASE_SPEED: number;
-    speed: number;
-    state: 'LIVING' | 'MOVING' | 'DEAD' | 'WIN';
+    state: 'LIVING' | 'DEAD' | 'WIN';
 }
 
 export interface Obstacle extends Entity {

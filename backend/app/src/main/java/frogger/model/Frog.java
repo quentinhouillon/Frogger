@@ -1,16 +1,22 @@
 package frogger.model;
 
+/**
+ * La grenouille.
+ *
+ * Mouvement :
+ *  - jump(dx, dy) : saut discret de JUMP_SIZE pixels, déclenché par chaque message WebSocket.
+ *  - drift(driftX) : dérive horizontale continue, appliquée par CollisionManager quand
+ *                    la grenouille est portée par un tronc ou une tortue.
+ *
+ * Plus de direction/vitesse continue : tout passe par les sauts.
+ */
 public class Frog extends Entity {
 
-    private final float BASE_SPEED = 250f;
-    private float speed = BASE_SPEED;
+    /** Taille d'un saut = hauteur d'une lane. */
+    public static final int JUMP_SIZE = 50;
 
-    private float directionX = 0f;
-    private float directionY = 0f;
-
-    enum FrogState {
+    public enum FrogState {
         LIVING,
-        MOVING,
         DEAD,
         WIN
     }
@@ -22,40 +28,31 @@ public class Frog extends Entity {
         this.state = FrogState.LIVING;
     }
 
-    public void update(float dt) {
-        if (state == FrogState.LIVING) {
-
-            float moveX = directionX * speed * dt;
-            float moveY = directionY * speed * dt;
-
-            super.setX(super.getX() + moveX);
-            super.setY(super.getY() + moveY);
-        }
+    /**
+     * Déplace la grenouille d'un saut discret.
+     * Appelé une fois par message reçu (UP / DOWN / LEFT / RIGHT).
+     *
+     * @param dx -1 (gauche), 0 ou +1 (droite)
+     * @param dy -1 (haut),   0 ou +1 (bas)
+     */
+    public void jump(int dx, int dy) {
+        if (state != FrogState.LIVING) return;
+        super.setX(super.getX() + dx * JUMP_SIZE);
+        super.setY(super.getY() + dy * JUMP_SIZE);
     }
 
-    public void setDirection(float dx, float dy) {
-        // System.err.println("Direction set to " + dx + ", " + dy);
-        this.directionX = dx;
-        this.directionY = dy;
+    /**
+     * Dérive horizontale continue.
+     * Appelé à chaque frame par CollisionManager quand la grenouille
+     * est sur un tronc ou une tortue.
+     *
+     * @param driftX déplacement en pixels pour cette frame
+     */
+    public void drift(float driftX) {
+        if (state != FrogState.LIVING) return;
+        super.setX(super.getX() + driftX);
     }
 
-    public float getBASE_SPEED() {
-        return BASE_SPEED;
-    }
-
-    public void setSpeed(float speed) {
-        this.speed = speed;
-    }
-
-    public float getSpeed() {
-        return this.speed;
-    }
-
-    public FrogState getState() {
-        return this.state;
-    }
-
-    public void setState(FrogState state) {
-        this.state = state;
-    }
+    public FrogState getState()           { return state; }
+    public void      setState(FrogState s){ this.state = s; }
 }

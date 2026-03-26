@@ -3,20 +3,21 @@ package frogger.model;
 import java.util.ArrayList;
 
 /**
- * Responsable de la détection et de la résolution des collisions.
- * Décide si la grenouille meurt, se laisse porter, ou se noie.
+ * Gère toutes les collisions entre la grenouille et les obstacles.
+ *
+ * Route  → mort immédiate.
+ * Rivière avec tronc/tortue → la grenouille dérive avec l'obstacle (drift).
+ * Rivière sans tronc/tortue → noyade.
  */
 public class CollisionManager {
 
     private static final int LANE_HEIGHT = 50;
 
     /**
-     * Vérifie toutes les collisions entre la grenouille et les obstacles de chaque lane.
-     * Modifie directement l'état de la grenouille selon le résultat.
-     *
-     * @return true si la grenouille vient de mourir (pour que GameMap puisse la faire respawn)
+     * @param dt delta time en secondes (nécessaire pour calculer la dérive du tronc)
+     * @return true si la grenouille vient de mourir
      */
-    public boolean update(Frog frog, ArrayList<Lane> lanes) {
+    public boolean update(Frog frog, ArrayList<Lane> lanes, float dt) {
         for (Lane lane : lanes) {
             boolean isSafeInRiver = false;
 
@@ -25,18 +26,15 @@ public class CollisionManager {
                     switch (lane.getLaneType()) {
 
                         case ROAD:
-                            // Collision avec une voiture → mort immédiate
+                            // Collision voiture/camion → mort
                             frog.setState(Frog.FrogState.DEAD);
                             return true;
 
                         case RIVER:
-                            // Collision avec un tronc/tortue → on se laisse porter
+                            // Sur un tronc ou une tortue → dérive avec lui
                             isSafeInRiver = true;
                             float dirX = lane.getMovingDirection() == Lane.MovingDirection.RIGHT ? 1f : -1f;
-                            frog.setDirection(dirX, 0);
-                            if (frog.getState() != Frog.FrogState.MOVING) {
-                                frog.setSpeed(lane.getSpeed());
-                            }
+                            frog.drift(dirX * lane.getSpeed() * dt);
                             break;
 
                         default:
@@ -45,7 +43,7 @@ public class CollisionManager {
                 }
             }
 
-            // Rivière sans tronc sous la grenouille → noyade
+            // Dans la rivière mais aucun tronc/tortue sous la grenouille → noyade
             if (lane.getLaneType() == Lane.LaneType.RIVER && !isSafeInRiver) {
                 float frogY = frog.getY();
                 if (frogY >= lane.getPositionY() && frogY < lane.getPositionY() + LANE_HEIGHT) {
@@ -58,13 +56,11 @@ public class CollisionManager {
         return false;
     }
 
-    /**
-     * AABB (Axis-Aligned Bounding Box) : détecte si deux entités se chevauchent.
-     */
+    /** AABB : détecte si la grenouille touche un obstacle. */
     private boolean collides(Frog frog, Obstacle obstacle) {
-        return frog.getX()              < obstacle.getX() + obstacle.getWidth()  &&
+        return frog.getX()               < obstacle.getX() + obstacle.getWidth()  &&
                frog.getX() + frog.getWidth()  > obstacle.getX()                   &&
-               frog.getY()              < obstacle.getY() + obstacle.getHeight() &&
+               frog.getY()               < obstacle.getY() + obstacle.getHeight() &&
                frog.getY() + frog.getHeight() > obstacle.getY();
     }
 }

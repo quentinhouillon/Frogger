@@ -36,15 +36,14 @@ public class FroggerWebSocket extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         Frog frog = gameMap.getFrog();
-        
+
+        // Chaque message = un saut discret de Frog.JUMP_SIZE pixels
         switch (message) {
-            case "UP": frog.setDirection(0, -1); break;
-            case "DOWN": frog.setDirection(0, 1); break;
-            case "LEFT": frog.setDirection(-1, 0); break;
-            case "RIGHT": frog.setDirection(1, 0); break;
-            case "STOP": frog.setDirection(0, 0); break;
+            case "UP":    frog.jump( 0, -1); break;
+            case "DOWN":  frog.jump( 0,  1); break;
+            case "LEFT":  frog.jump(-1,  0); break;
+            case "RIGHT": frog.jump( 1,  0); break;
         }
-        
     }
 
     @Override
