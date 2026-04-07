@@ -25,11 +25,11 @@ export interface Lane {
 }
 
 export interface GameState {
-    frog: Frog;
-    lanes: Lane[];
+    screenWidth: number;
+    screenHeight: number;
     score: number;
     lifes: number;
     maxLifes: number;
-    screenWidth: number;
-    screenHeight: number;
+    frog: Frog;
+    lanes: Lane[];
 }

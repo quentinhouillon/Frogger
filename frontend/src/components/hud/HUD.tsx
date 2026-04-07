@@ -28,6 +28,16 @@ const HUD: React.FC<HUDProps> = ({ gameState, canvasW, scale }) => {
             <AnimatedScore score={gameState.score} />
 
             {/* Vies */}
+
+             <div className="flex flex-col items-center gap-0.5">
+                    <span className="font-[family-name:var(--font-orbitron)] text-[0.55rem] tracking-[0.2em] text-[#50ff8c]/55 uppercase">
+                        Lifes
+                    </span>
+                    <span className="font-[family-name:var(--font-orbitron)] text-lg font-bold text-white text-shadow-glow">
+                        {gameState.lifes} | {gameState.maxLifes}
+                    </span>
+                </div>
+
             <div className="flex flex-col items-center gap-0.5">
                 <span className="font-[family-name:var(--font-orbitron)] text-[0.55rem] tracking-[0.2em] text-[#50ff8c]/55 uppercase">
                     Vies
