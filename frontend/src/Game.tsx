@@ -28,7 +28,7 @@ const frogStateLabel: Record<string, string> = {
 const Game: React.FC = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
 
-    useEffect(() => {
+    useEffect(() =>
         wsService.connect('ws://localhost:8080');
         const unsubscribe = wsService.subscribe((data: GameState) => setGameState(data));
         return () => { unsubscribe(); wsService.disconnect(); };
