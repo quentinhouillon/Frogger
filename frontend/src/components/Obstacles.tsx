@@ -6,6 +6,7 @@ import truckSprite from '../sprites/truck_red.png';
 import turtleSprite from '../sprites/turtle.png';
 import woodLongSprite from '../sprites/wood_long.png';
 import woodShortSprite from '../sprites/wood_short.png';
+import waterlitySprite from '../sprites/tile_nenuphar_bush.png'
 
 interface ObstacleProps {
     data: ObstacleType;
@@ -18,6 +19,7 @@ const obstacleSpriteMap: Record<string, string> = {
     TURTLE:    turtleSprite,
     WOODLONG:  woodLongSprite,
     WOODSHORT: woodShortSprite,
+    WATERLITY: waterlitySprite
 };
 
 const Obstacle: React.FC<ObstacleProps> = ({ data, lanePositionY }) => {

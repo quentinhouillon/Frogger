@@ -16,7 +16,7 @@ export interface Obstacle extends Entity {
 }
 
 export interface Lane {
-    laneType: 'ROAD' | 'RIVER' | 'SAFE';
+    laneType: 'ROAD' | 'RIVER' | 'SAFE' | 'WATERLITY_BUSH';
     positionY: number;
     obstacles: Obstacle[];
     speed: number;
@@ -28,6 +28,8 @@ export interface GameState {
     screenWidth: number;
     screenHeight: number;
     score: number;
+    lifes: number;
+    maxLifes: number;
     frog: Frog;
     lanes: Lane[];
 }
