@@ -3,6 +3,8 @@ import { wsService } from './services/WebsocketService';
 import type { GameState } from './types/GameTypes';
 import Frog from './components/Frog';
 import Obstacle from './components/Obstacles';
+import PauseMenu from './components/PauseMenu';
+
 
 import roadSprite from './sprites/tile_road.png';
 import lakeSprite from './sprites/tile_water.png';
