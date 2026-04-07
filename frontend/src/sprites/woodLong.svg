@@ -1,9 +1,0 @@
-<svg viewBox="0 0 50 50" height="50" width="50" xmlns="http://www.w3.org/2000/svg">
-  <rect fill="#92400e" rx="3" height="14" width="40" y="18" x="5"></rect>
-  
-  <rect opacity="0.6" fill="#b45309" height="2" width="34" y="21" x="8"></rect>
-  <rect opacity="0.6" fill="#b45309" height="2" width="34" y="26" x="8"></rect>
-  
-  <ellipse fill="#78350f" ry="7" rx="3" cy="25" cx="6"></ellipse>
-  <ellipse fill="#78350f" ry="7" rx="3" cy="25" cx="44"></ellipse>
-</svg>

@@ -18,9 +18,9 @@ export interface Obstacle extends Entity {
 export interface Lane {
     laneType: 'ROAD' | 'RIVER' | 'SAFE' | 'WATERLITY_BUSH';
     positionY: number;
-    obstacles: Obstacle[];
     speed: number;
     movingDirection: 'LEFT' | 'RIGHT';
+    obstacles: Obstacle[];
     width: number;
 }
 

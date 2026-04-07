@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
+    "framer-motion": "^12.38.0",
     "howler": "^2.2.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

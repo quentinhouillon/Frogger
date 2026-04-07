@@ -46,7 +46,7 @@ public class Lane {
             case WOODSHORT: return 110;
             case TRUCK:     return 110;
             case CAR:       return  65;
-            case TURTLE:    return  80;
+            case TURTLE:    return  60;
             default:        return  60;
         }
     }

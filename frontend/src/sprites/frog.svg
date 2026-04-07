@@ -1,9 +1,0 @@
-<svg viewBox="0 0 50 50" height="50" width="50" xmlns="http://www.w3.org/2000/svg">
-  <path fill="#4ade80" d="M15 10 Q10 20 15 28 Q8 35 18 38 Q25 45 32 38 Q42 35 35 28 Q40 20 35 10 Q25 5 15 10"></path>
-  <path fill="#22c55e" d="M18 15 Q15 18 20 22"></path>
-  <path fill="#22c55e" d="M30 15 Q33 18 28 22"></path>
-  <circle fill="#111" r="3" cy="18" cx="20"></circle>
-  <circle fill="#111" r="3" cy="18" cx="30"></circle>
-  <circle fill="#fff" r="1" cy="18" cx="20"></circle>
-  <circle fill="#fff" r="1" cy="18" cx="30"></circle>
-</svg>
