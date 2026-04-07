@@ -14,6 +14,8 @@ const Lane: React.FC<LaneProps> = ({ data }) => {
         return "#3b82f6";
       case "SAFE":
         return "#22c55e";
+      case "WATERLITY_BUSH":
+        return "#1fae53";
       default:
         return "#9ca3af";
     }
@@ -27,6 +29,8 @@ const Lane: React.FC<LaneProps> = ({ data }) => {
         return "🌊";
       case "SAFE":
         return "🌿";
+      case "WATERLITY_BUSH":
+        return "🪷";
       default:
         return "";
     }

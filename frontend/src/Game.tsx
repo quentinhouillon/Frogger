@@ -11,13 +11,14 @@ import DeathBurst    from './components/effects/DeathBurst';
 
 import roadSprite from './sprites/tile_road.png';
 import lakeSprite from './sprites/tile_water.png';
+import bushSprite from './sprites/tile_bush.png';
 
 const LANE_HEIGHT = 50;
 const laneBgMap: Record<string, string> = {
     ROAD:  `url(${roadSprite}) repeat-x center / auto 100%`,
     RIVER: `url(${lakeSprite}) repeat-x center / auto 100%`,
     SAFE:  'linear-gradient(135deg, #1a4a1a 0%, #2d6e2d 50%, #1a4a1a 100%)',
-    WATERLITY_BUSH: `url(${lakeSprite}) repeat-x center / auto 100%`,
+    WATERLITY_BUSH: `url(${bushSprite}) repeat-x center / auto 100%`,
 };
 
 const Game: React.FC = () => {
