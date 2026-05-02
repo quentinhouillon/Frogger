@@ -22,13 +22,13 @@ const laneBgMap: Record<string, string> = {
 
 const Game: React.FC = () => {
     // 1. Toute la logique métier est encapulsée dans le hook
-    const { gameState, scale, deathBurst } = useGameLogic();
+    const { gameState, scale, deathBurst, resetGame } = useGameLogic();
 
     // 2. Écran de chargement si pas de données
     if (!gameState) return <LoadingScreen />;
 
     // 3. Dérivation des états visuels
-    const isDead  = gameState.frog.state === 'DEAD';
+    const isDead  = gameState.gameOver;
     const isWin   = gameState.frog.state === 'WIN';
     const canvasW = gameState.screenWidth  ?? 1000;
     const canvasH = gameState.screenHeight ?? 650;
@@ -78,7 +78,7 @@ const Game: React.FC = () => {
                         <DeathBurst key={`${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
                     )}
 
-                    <GameOverOverlay isVisible={isDead} />
+                    <GameOverOverlay isVisible={isDead} onReset={resetGame} />
                     <VictoryOverlay  isVisible={isWin} />
 
                 </motion.div>

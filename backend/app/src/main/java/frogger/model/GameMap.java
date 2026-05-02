@@ -20,6 +20,7 @@ public class GameMap {
     private final int              maxLifes;
     private int                    score;
     private int                    lifes;
+    private boolean                gameOver;
 
     public GameMap() {
         float startY = SCREEN_HEIGHT - 40f;
@@ -30,9 +31,12 @@ public class GameMap {
         score            = scoreManager.getScore();
         lifes            = MAX_LIFES;
         maxLifes         = MAX_LIFES;
+        gameOver         = false;
     }
 
     public void update(float dt) {
+        if (gameOver) return;
+
         // 1. Mise à jour des obstacles (spawn + déplacement + nettoyage)
         for (Lane lane : lanes) {
             lane.manageObstacle(dt);
@@ -40,14 +44,21 @@ public class GameMap {
 
         // 2. Détection des collisions (route / rivière + dérive du tronc)
         boolean isDead = collisionManager.update(frog, lanes, dt);
-        if (isDead && lifes > 0) {
+        if (isDead) {
+            if (lifes <= 1) {
+                lifes = 0;
+                gameOver = true;
+                frog.setState(Frog.FrogState.DEAD);
+                return;
+            }
             respawnFrog();
             return;
         }
 
-        // 3. Arrivée sur la zone nénuphars (si vivante) → score + respawn
+        // 3. Arrivée sur la zone nénuphars → score + respawn
         if (frog.getY() >= 0 && frog.getY() < LANE_HEIGHT) {
             scoreManager.onFrogArrived();
+            score = scoreManager.getScore();
             respawnFrog();
             return;
         }
@@ -62,11 +73,12 @@ public class GameMap {
 
 
     private void respawnFrog() {
+        lifes--;
         frog.setX(SCREEN_WIDTH / 2f - 20);
         frog.setY(SCREEN_HEIGHT - frog.getHeight());
         frog.setState(Frog.FrogState.LIVING);
         scoreManager.onFrogRespawn();
-        lifes--;
+        score = scoreManager.getScore();
     }
 
     private void constrainFrog() {
@@ -76,9 +88,10 @@ public class GameMap {
     }
 
 
-    public Frog            getFrog()         { return frog; }
-    public ArrayList<Lane> getLanes()        { return lanes; }
-    public int             getScore()        { return scoreManager.getScore(); }
+    public Frog            getFrog()          { return frog; }
+    public ArrayList<Lane> getLanes()         { return lanes; }
+    public int             getScore()         { return scoreManager.getScore(); }
+    public boolean         isGameOver()       { return gameOver; }
     public int             getSCREEN_WIDTH()  { return SCREEN_WIDTH; }
     public int             getSCREEN_HEIGHT() { return SCREEN_HEIGHT; }
 }

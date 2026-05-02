@@ -23,8 +23,8 @@ public class FroggerWebSocket extends WebSocketServer {
     
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        System.out.println("Nouveau joueur connecté !");
-        System.out.println("IP du joueur: " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
+        System.out.println("Nouveau joueur connecté : " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
+        gameMap = new GameMap();
     }
     
     @Override
@@ -35,9 +35,14 @@ public class FroggerWebSocket extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        Frog frog = gameMap.getFrog();
+        if ("RESET".equals(message)) {
+            gameMap = new GameMap();
+            return;
+        }
 
-        // Chaque message = un saut discret de Frog.JUMP_SIZE pixels
+        if (gameMap.isGameOver()) return;
+
+        Frog frog = gameMap.getFrog();
         switch (message) {
             case "UP":    frog.jump( 0, -1); break;
             case "DOWN":  frog.jump( 0,  1); break;

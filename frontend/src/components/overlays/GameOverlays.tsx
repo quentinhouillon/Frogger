@@ -3,9 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 interface OverlayProps {
     isVisible: boolean;
+    onReset?: () => void;
 }
 
-export const GameOverOverlay: React.FC<OverlayProps> = ({ isVisible }) => (
+export const GameOverOverlay: React.FC<OverlayProps> = ({ isVisible, onReset }) => (
     <AnimatePresence>
         {isVisible && (
             <motion.div
@@ -32,6 +33,17 @@ export const GameOverOverlay: React.FC<OverlayProps> = ({ isVisible }) => (
                 >
                     GAME OVER
                 </motion.p>
+                {onReset && (
+                    <motion.button
+                        onClick={onReset}
+                        className="mt-2 px-6 py-2 rounded-lg font-black tracking-widest text-black bg-[#ff5555] hover:bg-white transition-colors cursor-pointer"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0,  opacity: 1 }}
+                        transition={{ delay: 0.25 }}
+                    >
+                        REJOUER
+                    </motion.button>
+                )}
             </motion.div>
         )}
     </AnimatePresence>

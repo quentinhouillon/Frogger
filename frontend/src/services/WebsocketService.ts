@@ -1,32 +1,39 @@
 
 type Listener = (data: any) => void;
 
+const RECONNECT_DELAY_MS = 2000;
+
 class WebSocketService {
     private socket: WebSocket | null = null;
     private listeners: Set<Listener> = new Set();
-
-    constructor() {
-        
-    }
+    private currentUrl: string | null = null;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     connect(url: string) {
-        // Si déjà connecté ou en cours de connexion, on ne fait rien
+        this.currentUrl = url;
+        this._open(url);
+    }
+
+    private _open(url: string) {
         if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
             return;
         }
 
         console.log(`Tentative de connexion à ${url}...`);
-        const ws = new WebSocket(url) 
+        const ws = new WebSocket(url);
         this.socket = ws;
 
         ws.onopen = () => {
             console.log("WebSocket connecté !");
+            if (this.reconnectTimer !== null) {
+                clearTimeout(this.reconnectTimer);
+                this.reconnectTimer = null;
+            }
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                // On prévient tous les abonnés (les composants React)
                 this.listeners.forEach((listener) => listener(data));
             } catch (error) {
                 console.error("Erreur de parsing JSON", error);
@@ -34,14 +41,16 @@ class WebSocketService {
         };
 
         ws.onclose = () => {
-            console.log("WebSocket déconnecté.");
+            console.log("WebSocket déconnecté. Reconnexion dans " + RECONNECT_DELAY_MS + "ms...");
             if (this.socket === ws) {
-            this.socket = null;
-
+                this.socket = null;
+            }
+            if (this.currentUrl) {
+                this.reconnectTimer = setTimeout(() => this._open(this.currentUrl!), RECONNECT_DELAY_MS);
             }
         };
 
-        this.socket.onerror = (error) => {
+        ws.onerror = (error) => {
             console.error("Erreur WebSocket :", error);
         };
     }
@@ -71,6 +80,11 @@ class WebSocketService {
     }
 
     disconnect() {
+        this.currentUrl = null;
+        if (this.reconnectTimer !== null) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         if (this.socket) {
             this.socket.close();
             this.socket = null;

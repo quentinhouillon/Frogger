@@ -36,7 +36,6 @@ const Obstacle: React.FC<ObstacleProps> = ({ data, lanePositionY }) => {
                 backgroundSize:     'contain',
                 backgroundRepeat:   'no-repeat',
                 backgroundPosition: 'center',
-                border:             '1px solid red',
                 zIndex:             50,
             }}
         />

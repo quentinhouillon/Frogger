@@ -30,6 +30,7 @@ export interface GameState {
     score: number;
     lifes: number;
     maxLifes: number;
+    gameOver: boolean;
     frog: Frog;
     lanes: Lane[];
 }

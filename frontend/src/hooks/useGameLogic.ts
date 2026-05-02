@@ -98,5 +98,7 @@ export function useGameLogic() {
         };
     }, []);
 
-    return { gameState, scale, deathBurst };
+    const resetGame = () => wsService.send('RESET');
+
+    return { gameState, scale, deathBurst, resetGame };
 }
