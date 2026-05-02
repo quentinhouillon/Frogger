@@ -6,7 +6,7 @@ import truckSprite from '../sprites/truck_red.png';
 import turtleSprite from '../sprites/turtle.png';
 import woodLongSprite from '../sprites/wood_long.png';
 import woodShortSprite from '../sprites/wood_short.png';
-import waterlitySprite from '../sprites/tile_nenuphar_bush.png'
+import waterlitySprite from '../sprites/tile_nenuphar_bush.png';
 
 interface ObstacleProps {
     data: ObstacleType;
