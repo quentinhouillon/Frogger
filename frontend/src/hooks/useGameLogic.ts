@@ -14,7 +14,7 @@ function startCmd(s: GameSettings) {
     return `START:${s.slotsCount}:${s.difficulty}`;
 }
 
-export function useGameLogic(settings: GameSettings) {
+export function useGameLogic(settings: GameSettings, isPaused = false) {
     const [gameState, setGameState]     = useState<GameState | null>(null);
     const [scale, setScale]             = useState(1);
     const prevFrogState                 = useRef<string>('LIVING');
@@ -87,6 +87,11 @@ export function useGameLogic(settings: GameSettings) {
             if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
         };
 
+        if (isPaused) {
+            stopRepeat();
+            return;
+        }
+
         const handleKeyDown = (e: KeyboardEvent) => {
             const cmd = keyMap[e.key];
             if (!cmd || holdTimeout || repeatInterval) return;
@@ -106,7 +111,7 @@ export function useGameLogic(settings: GameSettings) {
             window.removeEventListener('keyup',   handleKeyUp);
             stopRepeat();
         };
-    }, []);
+    }, [isPaused]);
 
     const resetGame = () => wsService.send(startCmd(settingsRef.current));
 

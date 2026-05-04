@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
+import { wsService } from './services/WebsocketService';
 import type { GameSettings } from './types/GameTypes';
 
 import LoadingScreen from './components/screens/LoadingScreen';
 import HUD           from './components/hud/HUD';
+import PauseMenu     from './components/pauseMenu/pauseMenu';
 import { GameOverOverlay, VictoryOverlay } from './components/overlays/GameOverlays';
 import FrogComponent from './components/Frog';
 import Obstacle      from './components/Obstacles';
@@ -29,7 +31,34 @@ interface GameProps {
 }
 
 const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
-    const { gameState, scale, deathBurst, resetGame } = useGameLogic(settings);
+    const [isPaused, setIsPaused] = useState(false);
+    const { gameState, scale, deathBurst, resetGame } = useGameLogic(settings, isPaused);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !e.repeat) {
+                e.preventDefault();
+                setIsPaused((prev) => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    useEffect(() => {
+        wsService.send(isPaused ? 'PAUSE' : 'RESUME');
+    }, [isPaused]);
+
+    const handleResume = () => setIsPaused(false);
+    const handleRestart = () => {
+        setIsPaused(false);
+        resetGame();
+    };
+    const handleBackToMenu = () => {
+        setIsPaused(false);
+        onBackToMenu();
+    };
 
     if (!gameState) return <LoadingScreen />;
 
@@ -76,7 +105,7 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         </div>
                     ))}
 
-                    {/* Lily slots : fond buisson + nénuphar sur les emplacements */}
+                    {/* Lily slots */}
                     {gameState.lilySlots?.map((slot, i) => (
                         <motion.div
                             key={i}
@@ -84,7 +113,7 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                                 position:           'absolute',
                                 left:               slot.x,
                                 top:                slot.y,
-                                width:              slot.width + 20, // légèrement plus large visuellement
+                                width:              slot.width + 20,
                                 height:             slot.height,
                                 marginLeft:         -10,
                                 backgroundImage:    `url(${nenupharSprite})`,
@@ -99,7 +128,7 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         />
                     ))}
 
-                    {/* Grenouilles garées sur les slots */}
+                    {/* Grenouilles parked */}
                     {gameState.parkedFrogs?.map((pf, i) => (
                         <FrogComponent key={`parked-${i}`} data={pf} />
                     ))}
@@ -110,11 +139,13 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         <DeathBurst key={`${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
                     )}
 
-                    <GameOverOverlay isVisible={isDead} onReset={resetGame} onMenu={onBackToMenu} highScores={gameState.highScores} />
-                    <VictoryOverlay  isVisible={isWin}  onReset={resetGame} onMenu={onBackToMenu} highScores={gameState.highScores} />
+                    <GameOverOverlay isVisible={isDead} onReset={resetGame} onMenu={handleBackToMenu} highScores={gameState.highScores} />
+                    <VictoryOverlay  isVisible={isWin}  onReset={resetGame} onMenu={handleBackToMenu} highScores={gameState.highScores} />
 
                 </motion.div>
             </div>
+
+            {isPaused && <PauseMenu isPaused={isPaused} onResume={handleResume} onMenu={handleBackToMenu} onRestart={handleRestart} />}
 
             <p className="text-xs text-white/30 tracking-wide m-0">
                 <span className="font-[family-name:var(--font-orbitron)] text-[#50ff8c]/50 text-sm mr-1">↑ ↓ ← →</span>
