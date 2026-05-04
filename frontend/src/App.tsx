@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import Game          from './Game';
-import { wsService }  from './services/WebsocketService';
+
+import Game           from './Game';
+import MenuScreen     from './components/menu/MenuScreen';
+import ScoresScreen   from './components/menu/ScoresScreen';
+import SettingsScreen from './components/menu/SettingsScreen';
+import CreditsScreen  from './components/menu/CreditsScreen';
+
+import { wsService } from './services/WebsocketService';
 import type { GameSettings, HighScoreEntry, GameState } from './types/GameTypes';
 
 export type Screen = 'menu' | 'game' | 'scores' | 'settings' | 'credits';
@@ -13,7 +19,6 @@ function App() {
     const [settings,   setSettings]   = useState<GameSettings>(DEFAULT_SETTINGS);
     const [highScores, setHighScores] = useState<HighScoreEntry[]>([]);
 
-    // Connexion au WS dès le démarrage pour récupérer les scores même depuis le menu
     useEffect(() => {
         wsService.connect('ws://localhost:8080');
         const unsub = wsService.subscribe((data: GameState) => {
@@ -25,6 +30,14 @@ function App() {
     const navigate = (s: Screen) => setScreen(s);
 
     switch (screen) {
+        case 'menu':
+            return <MenuScreen onNavigate={navigate} />;
+        case 'scores':
+            return <ScoresScreen highScores={highScores} onBack={() => navigate('menu')} />;
+        case 'settings':
+            return <SettingsScreen settings={settings} onChange={setSettings} onBack={() => navigate('menu')} />;
+        case 'credits':
+            return <CreditsScreen onBack={() => navigate('menu')} />;
         case 'game':
             return <Game settings={settings} onBackToMenu={() => navigate('menu')} />;
     }
