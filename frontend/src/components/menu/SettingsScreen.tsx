@@ -1,42 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { GameSettings, Difficulty } from '../../types/GameTypes';
 
 interface Props {
     settings: GameSettings;
     onChange: (s: GameSettings) => void;
-    onBack:   () => void;
+    onBack: () => void;
 }
 
-const SLOT_OPTIONS:  (3|4|5)[]   = [3, 4, 5];
-const DIFF_OPTIONS: { value: Difficulty; label: string; color: string }[] = [
-    { value: 'easy',   label: 'FACILE',  color: '#50ff8c' },
-    { value: 'normal', label: 'NORMAL',  color: '#ffd700' },
-    { value: 'hard',   label: 'DIFFICILE', color: '#ff5555' },
+const SLOT_OPTIONS: (3 | 4 | 5)[] = [3, 4, 5];
+const DIFF_OPTIONS: { value: Difficulty; label: string }[] = [
+    { value: 'easy', label: 'FACILE' },
+    { value: 'normal', label: 'NORMAL' },
+    { value: 'hard', label: 'DIFFICILE' },
 ];
 
 function Toggle<T extends string | number>({
-    options, value, onSelect, colorFn,
+    options,
+    value,
+    onSelect,
 }: {
     options: T[];
     value: T;
     onSelect: (v: T) => void;
-    colorFn: (v: T) => string;
 }) {
     return (
         <div className="flex gap-2">
-            {options.map(opt => {
+            {options.map((opt) => {
                 const active = opt === value;
-                const color  = colorFn(opt);
                 return (
-                    <motion.button key={String(opt)} onClick={() => onSelect(opt)}
-                        className="px-5 py-2 rounded-lg font-[family-name:var(--font-orbitron)] font-black text-sm border-2 transition-all cursor-pointer"
+                    <motion.button
+                        key={String(opt)}
+                        onClick={() => onSelect(opt)}
+                        className="rounded-lg border px-4 py-2 text-sm font-semibold uppercase tracking-wide transition hover:scale-[1.02]"
                         style={{
-                            borderColor: active ? color : color + '33',
-                            color:       active ? '#000' : color,
-                            background:  active ? color : 'transparent',
+                            borderColor: active ? 'rgba(140,219,255,0.65)' : 'rgba(140,219,255,0.22)',
+                            background: active
+                                ? 'linear-gradient(180deg, rgba(140,219,255,0.24), rgba(25,73,96,0.36))'
+                                : 'transparent',
+                            color: active ? '#e8f6ff' : '#b4dae7',
                         }}
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
                         {String(opt)}
                     </motion.button>
                 );
@@ -46,51 +52,91 @@ function Toggle<T extends string | number>({
 }
 
 const SettingsScreen: React.FC<Props> = ({ settings, onChange, onBack }) => (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center gap-10 select-none"
-         style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
-
+    <div
+        className="min-h-screen w-screen flex flex-col items-center justify-center gap-10 select-none px-4"
+        style={{
+            background:
+                'radial-gradient(circle at top, rgba(140,219,255,0.12) 0%, rgba(1,8,15,0.86) 40%, rgba(0,0,0,0.92) 100%)',
+            backdropFilter: 'blur(5px)',
+        }}
+    >
         <motion.h1
-            className="font-[family-name:var(--font-orbitron)] text-3xl font-black tracking-[0.2em] text-[#80cfff] m-0"
-            style={{ textShadow: '0 0 20px rgba(128,207,255,0.4)' }}
-            initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            PARAMÈTRES
+            className="m-0 text-3xl font-semibold tracking-wide uppercase text-[#dff6ff]"
+            style={{ textShadow: '0 0 20px rgba(140,219,255,0.3)' }}
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+        >
+            Paramètres
         </motion.h1>
 
-        <motion.div className="flex flex-col gap-8 w-80 rounded-2xl border border-[#80cfff]/20 p-8"
-            style={{ background: 'rgba(0,20,10,0.75)' }}
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.div
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border p-6 text-white"
+            style={{
+                borderColor: 'rgba(140,219,255,0.35)',
+                background: 'linear-gradient(165deg, rgba(5,11,18,0.97) 0%, rgba(6,7,10,0.97) 100%)',
+                boxShadow:
+                    '0 0 0 1px rgba(15,16,24,0.9), 0 0 50px rgba(140,219,255,0.16), 0 20px 60px rgba(0,0,0,0.75)',
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+        >
+            <div
+                className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full"
+                style={{ background: 'radial-gradient(circle, rgba(140,219,255,0.22), rgba(140,219,255,0))' }}
+            />
 
             {/* Nombre de slots */}
-            <div className="flex flex-col gap-3">
-                <label className="font-[family-name:var(--font-orbitron)] text-xs tracking-[0.2em] text-[#80cfff]/60 uppercase">
+            <div className="mb-5 flex flex-col gap-3">
+                <label className="text-xs uppercase tracking-[0.25em] text-[#b4dae7]">
                     Emplacements nénuphars
                 </label>
                 <Toggle
                     options={SLOT_OPTIONS}
                     value={settings.slotsCount}
-                    onSelect={v => onChange({ ...settings, slotsCount: v })}
-                    colorFn={() => '#80cfff'}
+                    onSelect={(v) => onChange({ ...settings, slotsCount: v })}
                 />
             </div>
 
             {/* Difficulté */}
             <div className="flex flex-col gap-3">
-                <label className="font-[family-name:var(--font-orbitron)] text-xs tracking-[0.2em] text-[#80cfff]/60 uppercase">
-                    Difficulté
-                </label>
+                <label className="text-xs uppercase tracking-[0.25em] text-[#b4dae7]">Difficulté</label>
                 <div className="flex gap-2 flex-wrap">
-                    {DIFF_OPTIONS.map(({ value, label, color }) => {
+                    {DIFF_OPTIONS.map(({ value, label }) => {
                         const active = settings.difficulty === value;
+                        const colorMap = {
+                            easy: { border: 'rgba(80,255,140,0.65)', bg: 'rgba(80,255,140,0.24)' },
+                            normal: { border: 'rgba(255,219,92,0.5)', bg: 'rgba(255,219,92,0.2)' },
+                            hard: { border: 'rgba(255,80,80,0.6)', bg: 'rgba(255,80,80,0.18)' },
+                        };
+                        const colors = colorMap[value];
+
                         return (
-                            <motion.button key={value}
+                            <motion.button
+                                key={value}
                                 onClick={() => onChange({ ...settings, difficulty: value })}
-                                className="px-4 py-2 rounded-lg font-[family-name:var(--font-orbitron)] font-black text-xs border-2 transition-all cursor-pointer"
+                                className="rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition hover:scale-[1.02]"
                                 style={{
-                                    borderColor: active ? color : color + '33',
-                                    color:       active ? '#000' : color,
-                                    background:  active ? color : 'transparent',
+                                    borderColor: active ? colors.border : colors.border + '33',
+                                    background: active
+                                        ? `linear-gradient(180deg, ${colors.bg}, rgba(25,85,48,0.36))`
+                                        : 'transparent',
+                                    color:
+                                        value === 'easy'
+                                            ? active
+                                                ? '#e8ffef'
+                                                : '#9decb8'
+                                            : value === 'normal'
+                                              ? active
+                                                  ? '#fff6d1'
+                                                  : '#fdd76d'
+                                              : active
+                                                ? '#ffb3b3'
+                                                : '#ff9999',
                                 }}
-                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
                                 {label}
                             </motion.button>
                         );
@@ -99,11 +145,21 @@ const SettingsScreen: React.FC<Props> = ({ settings, onChange, onBack }) => (
             </div>
         </motion.div>
 
-        <motion.button onClick={onBack}
-            className="font-[family-name:var(--font-orbitron)] text-sm tracking-widest text-white/50 hover:text-white border border-white/20 hover:border-white/50 px-8 py-2 rounded-lg transition-all cursor-pointer"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-            ← RETOUR
+        <motion.button
+            onClick={onBack}
+            className="rounded-lg border px-4 py-2 text-sm font-semibold uppercase tracking-wide transition hover:scale-[1.02]"
+            style={{
+                borderColor: 'rgba(140,219,255,0.44)',
+                background: 'linear-gradient(180deg, rgba(140,219,255,0.16), rgba(35,73,96,0.35))',
+                color: '#daf2ff',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+        >
+            ← Retour
         </motion.button>
     </div>
 );
