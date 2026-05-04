@@ -14,15 +14,15 @@ function startCmd(s: GameSettings) {
     return `START:${s.slotsCount}:${s.difficulty}:${s.mode}`;
 }
 
-export function useGameLogic(settings: GameSettings) {
-    const [gameState, setGameState]             = useState<GameState | null>(null);
-    const [scale, setScale]                     = useState(1);
-    const [myPlayerNumber, setMyPlayerNumber]   = useState<1 | 2 | null>(null);
-    const [opponentLeft, setOpponentLeft]       = useState(false);
-    const prevFrogState                         = useRef<string>('LIVING');
-    const [deathBurst, setDeathBurst]           = useState<DeathBurstState | null>(null);
-    const settingsRef                           = useRef(settings);
-    settingsRef.current                         = settings;
+export function useGameLogic(settings: GameSettings, isPaused = false) {
+    const [gameState, setGameState]           = useState<GameState | null>(null);
+    const [scale, setScale]                   = useState(1);
+    const [myPlayerNumber, setMyPlayerNumber] = useState<1 | 2 | null>(null);
+    const [opponentLeft, setOpponentLeft]     = useState(false);
+    const prevFrogState                       = useRef<string>('LIVING');
+    const [deathBurst, setDeathBurst]         = useState<DeathBurstState | null>(null);
+    const settingsRef                         = useRef(settings);
+    settingsRef.current                       = settings;
 
     /* ── Responsive ───────────────────────────────────────────────────── */
     useEffect(() => {
@@ -43,7 +43,6 @@ export function useGameLogic(settings: GameSettings) {
         wsService.connect('ws://localhost:8080');
 
         const unsubscribe = wsService.subscribe((data: any) => {
-            // Messages spéciaux du serveur (pas un GameState)
             if (data.type === 'init') {
                 setMyPlayerNumber(data.playerNumber as 1 | 2);
                 return;
@@ -89,7 +88,6 @@ export function useGameLogic(settings: GameSettings) {
 
         const keyMap: Record<string, string> = {
             ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
-            // ZQSD uniquement en multi local (en réseau, chaque joueur utilise ses flèches)
             ...(!isNetwork && {
                 z: 'UP2', Z: 'UP2', s: 'DOWN2', S: 'DOWN2',
                 q: 'LEFT2', Q: 'LEFT2', d: 'RIGHT2', D: 'RIGHT2',
@@ -106,6 +104,12 @@ export function useGameLogic(settings: GameSettings) {
             if (holdTimeout)    { clearTimeout(holdTimeout);    holdTimeout    = null; }
             if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
         };
+
+        // Quand la partie est en pause, on coupe toute répétition clavier
+        if (isPaused) {
+            stopRepeat();
+            return;
+        }
 
         const handleKeyDown = (e: KeyboardEvent) => {
             const cmd = keyMap[e.key];
@@ -126,7 +130,7 @@ export function useGameLogic(settings: GameSettings) {
             window.removeEventListener('keyup',   handleKeyUp);
             stopRepeat();
         };
-    }, []);
+    }, [isPaused]);
 
     const resetGame = () => {
         setOpponentLeft(false);

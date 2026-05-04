@@ -15,7 +15,6 @@ public class FroggerWebSocket extends WebSocketServer {
     private static final float SPEED_NORMAL = 1.0f;
     private static final float SPEED_HARD   = 1.4f;
 
-    // ── État de la session réseau ──────────────────────────────────────────────
     private enum NetState { IDLE, WAITING, PLAYING }
 
     private volatile GameMap   gameMap;
@@ -24,6 +23,7 @@ public class FroggerWebSocket extends WebSocketServer {
     private volatile NetState  netState      = NetState.IDLE;
     private volatile WebSocket player1Socket = null;
     private volatile WebSocket player2Socket = null;
+    private volatile boolean   paused        = false;
 
     public FroggerWebSocket(int port) {
         super(new InetSocketAddress(port));
@@ -40,15 +40,16 @@ public class FroggerWebSocket extends WebSocketServer {
             // Joueur 2 rejoint la session réseau
             player2Socket = conn;
             netState      = NetState.PLAYING;
+            paused        = false;
             gameMap.setWaitingForPlayer2(false);
             player1Socket.send("{\"type\":\"init\",\"playerNumber\":1}");
             player2Socket.send("{\"type\":\"init\",\"playerNumber\":2}");
             System.out.println("Joueur 2 connecté — partie réseau démarrée.");
 
         } else if (netState == NetState.IDLE) {
-            // Connexion standard (solo ou multi local)
             gameMap    = new GameMap();
             scoreSaved = false;
+            paused     = false;
         }
         // netState == PLAYING : connexion supplémentaire ignorée
     }
@@ -59,7 +60,6 @@ public class FroggerWebSocket extends WebSocketServer {
 
         if (netState != NetState.IDLE
                 && (conn == player1Socket || conn == player2Socket)) {
-            // Prévenir l'autre joueur
             WebSocket other = (conn == player1Socket) ? player2Socket : player1Socket;
             if (other != null && other.isOpen()) {
                 other.send("{\"type\":\"opponentDisconnected\"}");
@@ -69,6 +69,7 @@ public class FroggerWebSocket extends WebSocketServer {
             player2Socket = null;
             gameMap       = new GameMap();
             scoreSaved    = false;
+            paused        = false;
             System.out.println("Session réseau réinitialisée.");
         }
     }
@@ -78,45 +79,45 @@ public class FroggerWebSocket extends WebSocketServer {
 
         // ── Démarrage / reset ──────────────────────────────────────────────────
         if (message.startsWith("START:") || message.startsWith("RESET:")) {
-
-            // Ignorer si une session réseau est en cours et que ce n'est pas un joueur autorisé
             if (netState == NetState.PLAYING
                     && conn != player1Socket && conn != player2Socket) return;
 
-            String[] p    = message.split(":");
-            int   slots   = p.length > 1 ? parseSlots(p[1]) : 5;
-            float speed   = p.length > 2 ? parseSpeed(p[2]) : SPEED_NORMAL;
-            String mode   = p.length > 3 ? p[3] : "single";
+            String[] p  = message.split(":");
+            int   slots = p.length > 1 ? parseSlots(p[1]) : 5;
+            float speed = p.length > 2 ? parseSpeed(p[2]) : SPEED_NORMAL;
+            String mode = p.length > 3 ? p[3] : "single";
 
             if ("network".equals(mode)) {
-                // Mode réseau : P1 attend P2
                 netState      = NetState.WAITING;
                 player1Socket = conn;
                 player2Socket = null;
                 gameMap       = new GameMap(slots, speed, true);
                 gameMap.setWaitingForPlayer2(true);
                 scoreSaved    = false;
+                paused        = false;
                 System.out.println("Mode réseau : en attente du joueur 2...");
             } else {
-                // Solo ou multi local — pas de session réseau
                 netState      = NetState.IDLE;
                 player1Socket = null;
                 player2Socket = null;
                 gameMap       = new GameMap(slots, speed, "multi".equals(mode));
                 scoreSaved    = false;
+                paused        = false;
             }
             return;
         }
 
-        // ── Garder les jeux terminés et l'attente réseau muets ─────────────────
-        if (gameMap.isGameOver() || gameMap.isGameWon()) return;
-        if (gameMap.isWaitingForPlayer2()) return;
+        // ── Pause / reprise (fonctionnalité de leur branche) ───────────────────
+        if ("PAUSE".equals(message))  { paused = true;  return; }
+        if ("RESUME".equals(message)) { paused = false; return; }
 
-        // ── Ignorer les connexions non autorisées en session réseau ────────────
+        // ── Gardes ────────────────────────────────────────────────────────────
+        if (paused || gameMap.isGameOver() || gameMap.isGameWon()) return;
+        if (gameMap.isWaitingForPlayer2()) return;
         if (netState != NetState.IDLE
                 && conn != player1Socket && conn != player2Socket) return;
 
-        // En réseau, le socket détermine le joueur ; en local le suffixe "2" le fait
+        // En réseau, le socket identifie le joueur ; en local le suffixe "2" le fait
         boolean isNetP2 = (netState == NetState.PLAYING && conn == player2Socket);
 
         switch (message) {
@@ -124,7 +125,6 @@ public class FroggerWebSocket extends WebSocketServer {
             case "DOWN":   if (isNetP2) gameMap.tryJumpFrog2( 0, 1); else gameMap.tryJumpFrog1( 0, 1); break;
             case "LEFT":   if (isNetP2) gameMap.tryJumpFrog2(-1, 0); else gameMap.tryJumpFrog1(-1, 0); break;
             case "RIGHT":  if (isNetP2) gameMap.tryJumpFrog2( 1, 0); else gameMap.tryJumpFrog1( 1, 0); break;
-            // Multi local uniquement (ZQSD → suffixe "2")
             case "UP2":    gameMap.tryJumpFrog2( 0,-1); break;
             case "DOWN2":  gameMap.tryJumpFrog2( 0, 1); break;
             case "LEFT2":  gameMap.tryJumpFrog2(-1, 0); break;
@@ -144,8 +144,8 @@ public class FroggerWebSocket extends WebSocketServer {
 
     public void broadcastGameState() {
         GameMap current = gameMap;
-        // Pas de mise à jour pendant l'attente réseau (partie pas encore démarrée)
-        if (!current.isWaitingForPlayer2()) {
+        // Pas de mise à jour si en pause ou en attente d'un joueur réseau
+        if (!paused && !current.isWaitingForPlayer2()) {
             current.update(16f / 1000f);
         }
         if ((current.isGameOver() || current.isGameWon()) && !scoreSaved) {
@@ -167,4 +167,6 @@ public class FroggerWebSocket extends WebSocketServer {
             default:     return SPEED_NORMAL;
         }
     }
+
+    public GameMap getGameMap() { return gameMap; }
 }

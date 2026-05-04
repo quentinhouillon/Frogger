@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
+import { wsService } from './services/WebsocketService';
 import type { GameSettings } from './types/GameTypes';
 
-import LoadingScreen  from './components/screens/LoadingScreen';
-import WaitingScreen  from './components/screens/WaitingScreen';
+import LoadingScreen from './components/screens/LoadingScreen';
+import WaitingScreen from './components/screens/WaitingScreen';
 import HUD           from './components/hud/HUD';
+import PauseMenu     from './components/pauseMenu/PauseMenu';
 import { GameOverOverlay, VictoryOverlay } from './components/overlays/GameOverlays';
 import FrogComponent from './components/Frog';
 import Obstacle      from './components/Obstacles';
@@ -30,12 +32,35 @@ interface GameProps {
 }
 
 const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
-    const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft } = useGameLogic(settings);
+    const [isPaused, setIsPaused] = useState(false);
+    const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft } =
+        useGameLogic(settings, isPaused);
 
     // Retour au menu si l'adversaire se déconnecte en mode réseau
     useEffect(() => {
         if (opponentLeft) onBackToMenu();
     }, [opponentLeft, onBackToMenu]);
+
+    // Touche Escape pour pause / reprise
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !e.repeat) {
+                e.preventDefault();
+                setIsPaused(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // Notifie le serveur du changement de pause
+    useEffect(() => {
+        wsService.send(isPaused ? 'PAUSE' : 'RESUME');
+    }, [isPaused]);
+
+    const handleResume     = () => setIsPaused(false);
+    const handleRestart    = () => { setIsPaused(false); resetGame(); };
+    const handleBackToMenu = () => { setIsPaused(false); onBackToMenu(); };
 
     if (!gameState) return <LoadingScreen />;
 
@@ -81,13 +106,18 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     {gameState.lilySlots?.map((slot, i) => (
                         <motion.div key={`s1-${i}`}
                             style={{
-                                position: 'absolute', left: slot.x - 10, top: slot.y,
-                                width: slot.width + 20, height: slot.height,
-                                backgroundImage: `url(${nenupharSprite})`,
-                                backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
-                                zIndex: 5,
-                                opacity: slot.occupied ? 0.5 : 1,
-                                filter: 'hue-rotate(0deg)',
+                                position:           'absolute',
+                                left:               slot.x,
+                                top:                slot.y,
+                                width:              slot.width + 20,
+                                height:             slot.height,
+                                marginLeft:         -10,
+                                backgroundImage:    `url(${nenupharSprite})`,
+                                backgroundSize:     'contain',
+                                backgroundRepeat:   'no-repeat',
+                                backgroundPosition: 'center',
+                                zIndex:             5,
+                                opacity:            slot.occupied ? 0.5 : 1,
                             }}
                             animate={slot.occupied ? { scale: [1, 1.15, 1] } : {}}
                             transition={{ duration: 0.3 }}
@@ -98,13 +128,19 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     {isMulti && gameState.lilySlots2?.map((slot, i) => (
                         <motion.div key={`s2-${i}`}
                             style={{
-                                position: 'absolute', left: slot.x - 10, top: slot.y,
-                                width: slot.width + 20, height: slot.height,
-                                backgroundImage: `url(${nenupharSprite})`,
-                                backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
-                                zIndex: 5,
-                                opacity: slot.occupied ? 0.5 : 1,
-                                filter: 'hue-rotate(200deg) saturate(1.4)',
+                                position:           'absolute',
+                                left:               slot.x,
+                                top:                slot.y,
+                                width:              slot.width + 20,
+                                height:             slot.height,
+                                marginLeft:         -10,
+                                backgroundImage:    `url(${nenupharSprite})`,
+                                backgroundSize:     'contain',
+                                backgroundRepeat:   'no-repeat',
+                                backgroundPosition: 'center',
+                                zIndex:             5,
+                                opacity:            slot.occupied ? 0.5 : 1,
+                                filter:             'hue-rotate(200deg) saturate(1.4)',
                             }}
                             animate={slot.occupied ? { scale: [1, 1.15, 1] } : {}}
                             transition={{ duration: 0.3 }}
@@ -131,16 +167,22 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         <DeathBurst key={`${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
                     )}
 
-                    <GameOverOverlay isVisible={isDead} onReset={resetGame} onMenu={onBackToMenu} highScores={gameState.highScores} />
-                    <VictoryOverlay  isVisible={isWin}  onReset={resetGame} onMenu={onBackToMenu}
+                    <GameOverOverlay isVisible={isDead} onReset={handleRestart} onMenu={handleBackToMenu}
+                                     highScores={gameState.highScores} />
+                    <VictoryOverlay  isVisible={isWin}  onReset={handleRestart} onMenu={handleBackToMenu}
                                      highScores={gameState.highScores} winner={gameState.winner} />
 
-                    {/* Écran d'attente réseau (par-dessus tout) */}
+                    {/* Écran d'attente réseau */}
                     {gameState.waitingForPlayer2 && (
-                        <WaitingScreen onBack={onBackToMenu} />
+                        <WaitingScreen onBack={handleBackToMenu} />
                     )}
                 </motion.div>
             </div>
+
+            {isPaused && (
+                <PauseMenu isPaused={isPaused} onResume={handleResume}
+                           onMenu={handleBackToMenu} onRestart={handleRestart} />
+            )}
 
             <p className="text-xs text-white/30 tracking-wide m-0">
                 {settings.mode === 'network'
