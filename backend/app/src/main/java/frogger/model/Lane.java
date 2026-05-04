@@ -74,7 +74,7 @@ public class Lane {
      * Ils ont déjà leur vitesse et direction, donc ils se déplacent normalement.
      */
     private void initObstacles() {
-        if (this.laneType == LaneType.SAFE) return;
+        if (this.laneType == LaneType.SAFE || this.laneType == LaneType.WATERLITY_BUSH) return;
 
         int obsW = getObstacleWidth();
         int obsH = getObstacleHeight();
@@ -88,7 +88,7 @@ public class Lane {
     }
 
     public void manageObstacle(float dt) {
-        if (this.laneType == LaneType.SAFE) return;
+        if (this.laneType == LaneType.SAFE || this.laneType == LaneType.WATERLITY_BUSH) return;
 
         // Déplacement de tous les obstacles existants
         for (Obstacle obstacle : this.obstacles) {
