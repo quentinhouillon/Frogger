@@ -1,13 +1,14 @@
-
-type Listener = (data: any) => void;
+type Listener    = (data: any) => void;
+type VoidHandler = () => void;
 
 const RECONNECT_DELAY_MS = 2000;
 
 class WebSocketService {
-    private socket: WebSocket | null = null;
-    private listeners: Set<Listener> = new Set();
-    private currentUrl: string | null = null;
-    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private socket:           WebSocket | null = null;
+    private listeners:        Set<Listener>    = new Set();
+    private connectedHandlers: Set<VoidHandler> = new Set();
+    private currentUrl:       string | null    = null;
+    private reconnectTimer:   ReturnType<typeof setTimeout> | null = null;
 
     connect(url: string) {
         this.currentUrl = url;
@@ -16,66 +17,70 @@ class WebSocketService {
 
     private _open(url: string) {
         if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+            // Déjà ouvert : notifier immédiatement les handlers en attente
+            if (this.socket.readyState === WebSocket.OPEN) {
+                this.connectedHandlers.forEach(h => h());
+            }
             return;
         }
 
-        console.log(`Tentative de connexion à ${url}...`);
+        console.log(`Connexion à ${url}...`);
         const ws = new WebSocket(url);
         this.socket = ws;
 
         ws.onopen = () => {
-            console.log("WebSocket connecté !");
+            console.log('WebSocket connecté.');
             if (this.reconnectTimer !== null) {
                 clearTimeout(this.reconnectTimer);
                 this.reconnectTimer = null;
             }
+            this.connectedHandlers.forEach(h => h());
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                this.listeners.forEach((listener) => listener(data));
-            } catch (error) {
-                console.error("Erreur de parsing JSON", error);
+                this.listeners.forEach(l => l(data));
+            } catch (e) {
+                console.error('Erreur de parsing JSON', e);
             }
         };
 
         ws.onclose = () => {
-            console.log("WebSocket déconnecté. Reconnexion dans " + RECONNECT_DELAY_MS + "ms...");
-            if (this.socket === ws) {
-                this.socket = null;
-            }
+            console.log(`WebSocket déconnecté. Reconnexion dans ${RECONNECT_DELAY_MS}ms...`);
+            if (this.socket === ws) this.socket = null;
             if (this.currentUrl) {
                 this.reconnectTimer = setTimeout(() => this._open(this.currentUrl!), RECONNECT_DELAY_MS);
             }
         };
 
-        ws.onerror = (error) => {
-            console.error("Erreur WebSocket :", error);
-        };
+        ws.onerror = (e) => console.error('Erreur WebSocket :', e);
+    }
+
+    /** S'abonne aux messages JSON reçus du serveur. Retourne un unsubscribe. */
+    subscribe(callback: Listener): () => void {
+        this.listeners.add(callback);
+        return () => this.listeners.delete(callback);
     }
 
     /**
-     * Permet à un composant de s'abonner aux messages.
-     * @param callback La fonction à exécuter quand un message arrive.
-     * @returns Une fonction de nettoyage pour se désabonner.
+     * Enregistre un callback à appeler dès que la connexion est (ou devient) ouverte.
+     * Si déjà connecté, appelé immédiatement.
      */
-    subscribe(callback: Listener): () => void {
-        this.listeners.add(callback);
+    onConnected(handler: VoidHandler) {
+        this.connectedHandlers.add(handler);
+        if (this.socket?.readyState === WebSocket.OPEN) handler();
+    }
 
-        // On retourne une fonction "unsubscribe"
-        // C'est très pratique pour le useEffect de React !
-        return () => {
-            this.listeners.delete(callback);    
-            console.log("Composant désabonné.");
-        };
+    removeOnConnected(handler: VoidHandler) {
+        this.connectedHandlers.delete(handler);
     }
 
     send(message: string) {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        if (this.socket?.readyState === WebSocket.OPEN) {
             this.socket.send(message);
         } else {
-            console.warn("Impossible d'envoyer : WebSocket non connecté.");
+            console.warn('Impossible d\'envoyer : WebSocket non connecté.');
         }
     }
 
@@ -85,12 +90,9 @@ class WebSocketService {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
-        }
+        this.socket?.close();
+        this.socket = null;
     }
 }
 
-// On exporte une INSTANCE unique (Singleton)
 export const wsService = new WebSocketService();

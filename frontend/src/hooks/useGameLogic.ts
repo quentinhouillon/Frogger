@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { wsService } from '../services/WebsocketService';
-import type { GameState } from '../types/GameTypes';
+import type { GameState, GameSettings } from '../types/GameTypes';
 
 const LANE_HEIGHT = 50;
 
@@ -10,19 +10,25 @@ export interface DeathBurstState {
     type: 'road' | 'river';
 }
 
-export function useGameLogic() {
-    const [gameState, setGameState] = useState<GameState | null>(null);
-    const [scale, setScale]         = useState(1);
-    const prevFrogState             = useRef<string>('LIVING');
-    const [deathBurst, setDeathBurst] = useState<DeathBurstState | null>(null);
+function startCmd(s: GameSettings) {
+    return `START:${s.slotsCount}:${s.difficulty}`;
+}
 
-    /* ── Responsive : recalcule le scale quand la fenêtre est redimensionnée ── */
+export function useGameLogic(settings: GameSettings) {
+    const [gameState, setGameState]     = useState<GameState | null>(null);
+    const [scale, setScale]             = useState(1);
+    const prevFrogState                 = useRef<string>('LIVING');
+    const [deathBurst, setDeathBurst]   = useState<DeathBurstState | null>(null);
+    const settingsRef                   = useRef(settings);
+    settingsRef.current                 = settings;
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
     useEffect(() => {
         const updateScale = () => {
             if (!gameState) return;
-            const margin  = 32; // px de marge de chaque côté
-            const maxW    = window.innerWidth  - margin * 2;
-            const maxH    = window.innerHeight - 160; // réserve pour le HUD
+            const margin = 32;
+            const maxW   = window.innerWidth  - margin * 2;
+            const maxH   = window.innerHeight - 160;
             setScale(Math.min(1, maxW / gameState.screenWidth, maxH / gameState.screenHeight));
         };
         updateScale();
@@ -30,14 +36,23 @@ export function useGameLogic() {
         return () => window.removeEventListener('resize', updateScale);
     }, [gameState?.screenWidth, gameState?.screenHeight]);
 
-    /* ── WebSocket ──────────────────────────────────────────────────────── */
+    /* ── WebSocket ────────────────────────────────────────────────────── */
     useEffect(() => {
         wsService.connect('ws://localhost:8080');
         const unsubscribe = wsService.subscribe((data: GameState) => setGameState(data));
-        return () => { unsubscribe(); wsService.disconnect(); };
+
+        // Lance la partie avec les settings choisis dès la connexion
+        const openHandler = () => wsService.send(startCmd(settingsRef.current));
+        // Si déjà connecté, envoyer immédiatement
+        wsService.onConnected(openHandler);
+
+        return () => {
+            unsubscribe();
+            wsService.removeOnConnected(openHandler);
+        };
     }, []);
 
-    /* ── Détection de mort pour le burst de particules ──────────────────── */
+    /* ── Détection de mort ────────────────────────────────────────────── */
     useEffect(() => {
         if (!gameState) return;
         const { frog, lanes } = gameState;
@@ -48,9 +63,7 @@ export function useGameLogic() {
                 frog.y >= lane.positionY &&
                 frog.y <  lane.positionY + LANE_HEIGHT
             );
-
             setDeathBurst({ x: frog.x, y: frog.y, type: inRiver ? 'river' : 'road' });
-
             const t = setTimeout(() => setDeathBurst(null), 1500);
             return () => clearTimeout(t);
         }
@@ -58,12 +71,11 @@ export function useGameLogic() {
         prevFrogState.current = frog.state;
     }, [gameState]);
 
-    /* ── Clavier : saut discret + répétition si maintenu ───────────────── */
+    /* ── Clavier ──────────────────────────────────────────────────────── */
     useEffect(() => {
         const keyMap: Record<string, string> = {
             ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
         };
-
         const INITIAL_DELAY_MS   = 200;
         const REPEAT_INTERVAL_MS = 150;
 
@@ -85,9 +97,7 @@ export function useGameLogic() {
             }, INITIAL_DELAY_MS);
         };
 
-        const handleKeyUp = (e: KeyboardEvent) => {
-            if (keyMap[e.key]) stopRepeat();
-        };
+        const handleKeyUp = (e: KeyboardEvent) => { if (keyMap[e.key]) stopRepeat(); };
 
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup',   handleKeyUp);
@@ -98,7 +108,7 @@ export function useGameLogic() {
         };
     }, []);
 
-    const resetGame = () => wsService.send('RESET');
+    const resetGame = () => wsService.send(startCmd(settingsRef.current));
 
     return { gameState, scale, deathBurst, resetGame };
 }

@@ -1,3 +1,10 @@
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
+export interface GameSettings {
+    slotsCount:  3 | 4 | 5;
+    difficulty:  Difficulty;
+}
+
 export interface Entity {
     x: number;
     y: number;
@@ -24,6 +31,19 @@ export interface Lane {
     width: number;
 }
 
+export interface LilySlot {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    occupied: boolean;
+}
+
+export interface HighScoreEntry {
+    score: number;
+    date:  string;
+}
+
 export interface GameState {
     screenWidth: number;
     screenHeight: number;
@@ -31,7 +51,10 @@ export interface GameState {
     lifes: number;
     maxLifes: number;
     gameOver: boolean;
+    gameWon:  boolean;
     frog: Frog;
-    frogs: Frog[];
+    parkedFrogs: Frog[];
     lanes: Lane[];
+    lilySlots: LilySlot[];
+    highScores: HighScoreEntry[];
 }
