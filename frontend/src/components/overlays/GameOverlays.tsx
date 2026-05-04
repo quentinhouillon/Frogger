@@ -7,6 +7,7 @@ interface OverlayProps {
     onReset?:    () => void;
     onMenu?:     () => void;
     highScores?: HighScoreEntry[];
+    winner?:     number; // 0=solo/aucun, 1=J1, 2=J2
 }
 
 const ScoreTable: React.FC<{ entries: HighScoreEntry[]; accent: string }> = ({ entries, accent }) => (
@@ -72,7 +73,7 @@ export const GameOverOverlay: React.FC<OverlayProps> = ({ isVisible, onReset, on
     </AnimatePresence>
 );
 
-export const VictoryOverlay: React.FC<OverlayProps> = ({ isVisible, onReset, onMenu, highScores }) => (
+export const VictoryOverlay: React.FC<OverlayProps> = ({ isVisible, onReset, onMenu, highScores, winner }) => (
     <AnimatePresence>
         {isVisible && (
             <motion.div
@@ -90,7 +91,7 @@ export const VictoryOverlay: React.FC<OverlayProps> = ({ isVisible, onReset, onM
                     style={{ textShadow: '0 0 20px #ffd700, 0 2px 0 rgba(0,0,0,0.5)' }}
                     initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
                 >
-                    VICTORY!
+                    {winner === 1 ? '🐸 JOUEUR 1 GAGNE !' : winner === 2 ? '🐸 JOUEUR 2 GAGNE !' : 'VICTORY!'}
                 </motion.p>
 
                 {highScores && highScores.length > 0 && <ScoreTable entries={highScores} accent="#ffd700" />}

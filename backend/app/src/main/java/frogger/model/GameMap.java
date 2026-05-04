@@ -11,137 +11,250 @@ public class GameMap {
     private final int screenWidth  = SCREEN_WIDTH;
     private final int screenHeight = SCREEN_HEIGHT;
 
-    private Frog                         frog;
-    private final ArrayList<Lane>        lanes;
-    private final CollisionManager       collisionManager;
-    private final ScoreManager           scoreManager;
-    private final int                    maxLifes;
-    private int                          score;
-    private int                          lifes;
-    private boolean                      gameOver;
-    private boolean                      gameWon;
-    private final ArrayList<LilySlot>    lilySlots;
-    private final ArrayList<Frog>        parkedFrogs;
-    private ArrayList<HighScoreEntry>    highScores;
+    // ── Commun ────────────────────────────────────────────────────────────────
+    private final ArrayList<Lane>     lanes;
+    private final CollisionManager    collisionManager;
+    private final int                 maxLifes;
+    private boolean                   gameOver;
+    private boolean                   gameWon;
+    private boolean                   waitingForPlayer2;
+    private ArrayList<HighScoreEntry> highScores;
+    private final boolean             multiplayerMode;
 
-    public GameMap(int slotsCount, float speedMult) {
-        float startY     = SCREEN_HEIGHT - 40f;
-        frog             = new Frog(SCREEN_WIDTH / 2f - 20, startY, 40, 40);
+    // ── Joueur 1 ──────────────────────────────────────────────────────────────
+    private Frog                      frog;
+    private final ScoreManager        scoreManager;
+    private int                       score;
+    private int                       lifes;
+    private final ArrayList<LilySlot> lilySlots;
+    private final ArrayList<Frog>     parkedFrogs;
+
+    // ── Joueur 2 (multijoueur uniquement, null en solo) ───────────────────────
+    private Frog                      frog2;
+    private ScoreManager              scoreManager2;
+    private int                       score2;
+    private int                       lifes2;
+    private ArrayList<LilySlot>       lilySlots2;
+    private ArrayList<Frog>           parkedFrogs2;
+    private int                       winner;  // 0=aucun, 1=J1, 2=J2
+
+    // ── Constructeur principal ────────────────────────────────────────────────
+    public GameMap(int slotsCount, float speedMult, boolean multiplayer) {
+        this.multiplayerMode = multiplayer;
         lanes            = LaneConfig.buildLanes(SCREEN_WIDTH, speedMult);
         collisionManager = new CollisionManager();
-        scoreManager     = new ScoreManager(startY);
-        score            = 0;
-        lifes            = MAX_LIFES;
         maxLifes         = MAX_LIFES;
         gameOver         = false;
         gameWon          = false;
-        lilySlots        = buildLilySlots(slotsCount);
-        parkedFrogs      = new ArrayList<>();
+        winner           = 0;
         highScores       = new ArrayList<>(HighScoreRepository.load());
+
+        float startY = SCREEN_HEIGHT - 40f;
+
+        // J1 démarre légèrement à gauche du centre
+        float p1StartX = 430f;
+        frog         = new Frog(p1StartX, startY, 40, 40);
+        scoreManager = new ScoreManager(startY);
+        score        = 0;
+        lifes        = MAX_LIFES;
+        lilySlots    = multiplayer ? buildMultiSlots(1) : buildSoloSlots(slotsCount);
+        parkedFrogs  = new ArrayList<>();
+
+        // J2 démarre légèrement à droite du centre (multijoueur seulement)
+        if (multiplayer) {
+            float p2StartX = 530f;
+            frog2        = new Frog(p2StartX, startY, 40, 40);
+            scoreManager2 = new ScoreManager(startY);
+            score2       = 0;
+            lifes2       = MAX_LIFES;
+            lilySlots2   = buildMultiSlots(2);
+            parkedFrogs2 = new ArrayList<>();
+        }
     }
 
-    /** Constructeur par défaut : 5 slots, vitesse normale. */
-    public GameMap() {
-        this(5, 1.0f);
-    }
+    public GameMap(int slotsCount, float speedMult) { this(slotsCount, speedMult, false); }
+    public GameMap()                                 { this(5, 1.0f, false); }
 
-    private ArrayList<LilySlot> buildLilySlots(int count) {
+    // ── Slots solo ────────────────────────────────────────────────────────────
+    private ArrayList<LilySlot> buildSoloSlots(int count) {
         ArrayList<LilySlot> slots = new ArrayList<>();
         int[][] positions = {
-            {},
-            {},
-            {},
-            {180, 480, 780},           // 3 slots
-            {180, 380, 580, 780},      // 4 slots
-            {80,  280, 480, 680, 880}, // 5 slots
+            {}, {}, {},
+            {180, 480, 780},
+            {180, 380, 580, 780},
+            {80,  280, 480, 680, 880},
         };
         int[] xs = (count >= 3 && count <= 5) ? positions[count] : positions[5];
-        for (int x : xs) {
-            slots.add(new LilySlot(x, 0, 40, LANE_HEIGHT));
-        }
+        for (int x : xs) slots.add(new LilySlot(x, 0, 40, LANE_HEIGHT));
         return slots;
     }
 
+    // ── Slots multijoueur (3 par joueur, côtés opposés) ───────────────────────
+    private ArrayList<LilySlot> buildMultiSlots(int player) {
+        ArrayList<LilySlot> slots = new ArrayList<>();
+        // J1 : gauche  (80, 230, 380) — tous atteignables depuis x=430
+        // J2 : droite  (580, 730, 880) — tous atteignables depuis x=530
+        int[] xs = player == 1 ? new int[]{80, 230, 380} : new int[]{580, 730, 880};
+        for (int x : xs) slots.add(new LilySlot(x, 0, 40, LANE_HEIGHT));
+        return slots;
+    }
+
+    // ── Boucle principale ─────────────────────────────────────────────────────
     public void update(float dt) {
         if (gameOver || gameWon) return;
 
         for (Lane lane : lanes) lane.manageObstacle(dt);
 
-        CollisionManager.CollisionResult result = collisionManager.update(frog, lanes, lilySlots, dt);
-
-        switch (result) {
+        // ── Grenouille 1 ──
+        CollisionManager.CollisionResult r1 = collisionManager.update(frog, lanes, lilySlots, dt);
+        switch (r1) {
             case DEAD:
-                score = scoreManager.getScore(); // sync avant game over
+                score = scoreManager.getScore();
                 if (lifes <= 1) {
                     lifes    = 0;
-                    gameOver = true;
-                } else {
-                    respawnFrog(true);
+                    if (multiplayerMode) { winner = 2; gameWon = true; }
+                    else                  gameOver = true;
+                    return;
                 }
-                return;
+                respawnFrog1(true);
+                break;
 
             case LILY_LANDED:
-                onLilyLanded();
-                return;
+                landOnSlot(frog, lilySlots, parkedFrogs, scoreManager, 1);
+                if (gameOver || gameWon) return;
+                break;
 
             default:
-                break;
+                if (frog.getState() == Frog.FrogState.LIVING) {
+                    scoreManager.onFrogMoved(frog.getY());
+                    score = scoreManager.getScore();
+                }
+                constrainFrog(frog);
         }
 
-        scoreManager.onFrogMoved(frog.getY());
-        score = scoreManager.getScore();
-        constrainFrog();
+        // ── Grenouille 2 (multijoueur) ──
+        if (!multiplayerMode || frog2 == null) return;
+
+        CollisionManager.CollisionResult r2 = collisionManager.update(frog2, lanes, lilySlots2, dt);
+        switch (r2) {
+            case DEAD:
+                score2 = scoreManager2.getScore();
+                if (lifes2 <= 1) {
+                    lifes2 = 0;
+                    winner = 1;
+                    gameWon = true;
+                    return;
+                }
+                respawnFrog2(true);
+                break;
+
+            case LILY_LANDED:
+                landOnSlot(frog2, lilySlots2, parkedFrogs2, scoreManager2, 2);
+                break;
+
+            default:
+                if (frog2.getState() == Frog.FrogState.LIVING) {
+                    scoreManager2.onFrogMoved(frog2.getY());
+                    score2 = scoreManager2.getScore();
+                }
+                constrainFrog(frog2);
+        }
     }
 
-    private void onLilyLanded() {
-        for (LilySlot slot : lilySlots) {
+    // ── Atterrissage sur nénuphar ─────────────────────────────────────────────
+    private void landOnSlot(Frog f, ArrayList<LilySlot> slots,
+                             ArrayList<Frog> parked, ScoreManager sm, int playerNum) {
+        for (LilySlot slot : slots) {
             if (!slot.isOccupied()
-                    && frog.getX() < slot.getX() + slot.getWidth()
-                    && frog.getX() + frog.getWidth() > slot.getX()) {
+                    && f.getX() < slot.getX() + slot.getWidth()
+                    && f.getX() + f.getWidth() > slot.getX()) {
                 slot.setOccupied(true);
-                Frog parked = new Frog(slot.getX(), slot.getY() + (LANE_HEIGHT - frog.getHeight()) / 2f, 40, 40);
-                parked.setState(Frog.FrogState.WIN);
-                parkedFrogs.add(parked);
+                Frog p = new Frog(slot.getX(), slot.getY() + (LANE_HEIGHT - f.getHeight()) / 2f, 40, 40);
+                p.setState(Frog.FrogState.WIN);
+                parked.add(p);
                 break;
             }
         }
+        sm.onFrogArrived();
+        if (playerNum == 1) score  = sm.getScore();
+        else                 score2 = sm.getScore();
 
-        scoreManager.onFrogArrived();
-        score = scoreManager.getScore();
-
-        if (lilySlots.stream().allMatch(LilySlot::isOccupied)) {
+        if (slots.stream().allMatch(LilySlot::isOccupied)) {
+            winner  = playerNum;
             gameWon = true;
             return;
         }
 
-        respawnFrog(false);
+        if (playerNum == 1) respawnFrog1(false);
+        else                 respawnFrog2(false);
     }
 
-    private void respawnFrog(boolean losesLife) {
+    // ── Respawns ──────────────────────────────────────────────────────────────
+    private void respawnFrog1(boolean losesLife) {
         if (losesLife) lifes--;
-        float startY = SCREEN_HEIGHT - 40f;
-        frog = new Frog(SCREEN_WIDTH / 2f - 20, startY, 40, 40);
+        frog = new Frog(430f, SCREEN_HEIGHT - 40f, 40, 40);
         scoreManager.onFrogRespawn();
         score = scoreManager.getScore();
     }
 
-    private void constrainFrog() {
-        if (frog.getX() < 0) frog.setX(0);
-        if (frog.getX() > SCREEN_WIDTH - frog.getWidth()) frog.setX(SCREEN_WIDTH - frog.getWidth());
-        if (frog.getY() > SCREEN_HEIGHT - frog.getHeight()) frog.setY(SCREEN_HEIGHT - frog.getHeight());
+    private void respawnFrog2(boolean losesLife) {
+        if (losesLife) lifes2--;
+        frog2 = new Frog(530f, SCREEN_HEIGHT - 40f, 40, 40);
+        scoreManager2.onFrogRespawn();
+        score2 = scoreManager2.getScore();
     }
 
+    // ── Contrainte écran ──────────────────────────────────────────────────────
+    private void constrainFrog(Frog f) {
+        if (f.getX() < 0)                          f.setX(0);
+        if (f.getX() > SCREEN_WIDTH - f.getWidth()) f.setX(SCREEN_WIDTH - f.getWidth());
+        if (f.getY() > SCREEN_HEIGHT - f.getHeight()) f.setY(SCREEN_HEIGHT - f.getHeight());
+    }
+
+    // ── Saut avec blocage inter-joueurs ───────────────────────────────────────
+    /**
+     * Tente de faire sauter `mover`. Si la destination est occupée par `blocker`,
+     * le saut est annulé silencieusement (bloqueur gagne).
+     */
+    private void tryJump(Frog mover, Frog blocker, int dx, int dy) {
+        if (mover == null || mover.getState() != Frog.FrogState.LIVING) return;
+        if (blocker != null && blocker.getState() == Frog.FrogState.LIVING) {
+            float destX = mover.getX() + dx * Frog.JUMP_SIZE;
+            float destY = mover.getY() + dy * Frog.JUMP_SIZE;
+            boolean blocked = destX < blocker.getX() + blocker.getWidth()
+                           && destX + mover.getWidth()  > blocker.getX()
+                           && destY < blocker.getY() + blocker.getHeight()
+                           && destY + mover.getHeight() > blocker.getY();
+            if (blocked) return;
+        }
+        mover.jump(dx, dy);
+    }
+
+    public void tryJumpFrog1(int dx, int dy) { tryJump(frog,  frog2, dx, dy); }
+    public void tryJumpFrog2(int dx, int dy) { tryJump(frog2, frog,  dx, dy); }
+
+    // ── Scores ────────────────────────────────────────────────────────────────
     public void saveHighScores() {
-        highScores = new ArrayList<>(HighScoreRepository.save(score));
+        int best = multiplayerMode ? Math.max(score, score2) : score;
+        highScores = new ArrayList<>(HighScoreRepository.save(best));
     }
 
-    public Frog                   getFrog()          { return frog; }
-    public ArrayList<Lane>        getLanes()         { return lanes; }
-    public ArrayList<LilySlot>    getLilySlots()     { return lilySlots; }
-    public ArrayList<Frog>        getParkedFrogs()   { return parkedFrogs; }
-    public int                    getScore()         { return score; }
-    public boolean                isGameOver()       { return gameOver; }
-    public boolean                isGameWon()        { return gameWon; }
-    public int                    getSCREEN_WIDTH()  { return SCREEN_WIDTH; }
-    public int                    getSCREEN_HEIGHT() { return SCREEN_HEIGHT; }
+    // ── Getters ───────────────────────────────────────────────────────────────
+    public void    setWaitingForPlayer2(boolean v)  { waitingForPlayer2 = v; }
+    public boolean isWaitingForPlayer2()            { return waitingForPlayer2; }
+
+    public Frog                   getFrog()            { return frog;            }
+    public Frog                   getFrog2()           { return frog2;           }
+    public ArrayList<Lane>        getLanes()           { return lanes;           }
+    public ArrayList<LilySlot>    getLilySlots()       { return lilySlots;       }
+    public ArrayList<LilySlot>    getLilySlots2()      { return lilySlots2;      }
+    public ArrayList<Frog>        getParkedFrogs()     { return parkedFrogs;     }
+    public ArrayList<Frog>        getParkedFrogs2()    { return parkedFrogs2;    }
+    public int                    getScore()           { return score;           }
+    public int                    getScore2()          { return score2;          }
+    public boolean                isGameOver()         { return gameOver;        }
+    public boolean                isGameWon()          { return gameWon;         }
+    public boolean                isMultiplayerMode()  { return multiplayerMode; }
+    public int                    getSCREEN_WIDTH()    { return SCREEN_WIDTH;    }
+    public int                    getSCREEN_HEIGHT()   { return SCREEN_HEIGHT;   }
 }

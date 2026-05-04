@@ -11,16 +11,18 @@ export interface DeathBurstState {
 }
 
 function startCmd(s: GameSettings) {
-    return `START:${s.slotsCount}:${s.difficulty}`;
+    return `START:${s.slotsCount}:${s.difficulty}:${s.mode}`;
 }
 
 export function useGameLogic(settings: GameSettings) {
-    const [gameState, setGameState]     = useState<GameState | null>(null);
-    const [scale, setScale]             = useState(1);
-    const prevFrogState                 = useRef<string>('LIVING');
-    const [deathBurst, setDeathBurst]   = useState<DeathBurstState | null>(null);
-    const settingsRef                   = useRef(settings);
-    settingsRef.current                 = settings;
+    const [gameState, setGameState]             = useState<GameState | null>(null);
+    const [scale, setScale]                     = useState(1);
+    const [myPlayerNumber, setMyPlayerNumber]   = useState<1 | 2 | null>(null);
+    const [opponentLeft, setOpponentLeft]       = useState(false);
+    const prevFrogState                         = useRef<string>('LIVING');
+    const [deathBurst, setDeathBurst]           = useState<DeathBurstState | null>(null);
+    const settingsRef                           = useRef(settings);
+    settingsRef.current                         = settings;
 
     /* ── Responsive ───────────────────────────────────────────────────── */
     useEffect(() => {
@@ -39,11 +41,21 @@ export function useGameLogic(settings: GameSettings) {
     /* ── WebSocket ────────────────────────────────────────────────────── */
     useEffect(() => {
         wsService.connect('ws://localhost:8080');
-        const unsubscribe = wsService.subscribe((data: GameState) => setGameState(data));
 
-        // Lance la partie avec les settings choisis dès la connexion
+        const unsubscribe = wsService.subscribe((data: any) => {
+            // Messages spéciaux du serveur (pas un GameState)
+            if (data.type === 'init') {
+                setMyPlayerNumber(data.playerNumber as 1 | 2);
+                return;
+            }
+            if (data.type === 'opponentDisconnected') {
+                setOpponentLeft(true);
+                return;
+            }
+            setGameState(data as GameState);
+        });
+
         const openHandler = () => wsService.send(startCmd(settingsRef.current));
-        // Si déjà connecté, envoyer immédiatement
         wsService.onConnected(openHandler);
 
         return () => {
@@ -73,9 +85,17 @@ export function useGameLogic(settings: GameSettings) {
 
     /* ── Clavier ──────────────────────────────────────────────────────── */
     useEffect(() => {
+        const isNetwork = settingsRef.current.mode === 'network';
+
         const keyMap: Record<string, string> = {
             ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+            // ZQSD uniquement en multi local (en réseau, chaque joueur utilise ses flèches)
+            ...(!isNetwork && {
+                z: 'UP2', Z: 'UP2', s: 'DOWN2', S: 'DOWN2',
+                q: 'LEFT2', Q: 'LEFT2', d: 'RIGHT2', D: 'RIGHT2',
+            }),
         };
+
         const INITIAL_DELAY_MS   = 200;
         const REPEAT_INTERVAL_MS = 150;
 
@@ -108,7 +128,10 @@ export function useGameLogic(settings: GameSettings) {
         };
     }, []);
 
-    const resetGame = () => wsService.send(startCmd(settingsRef.current));
+    const resetGame = () => {
+        setOpponentLeft(false);
+        wsService.send(startCmd(settingsRef.current));
+    };
 
-    return { gameState, scale, deathBurst, resetGame };
+    return { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft };
 }
