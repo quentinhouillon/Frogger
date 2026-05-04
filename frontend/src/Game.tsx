@@ -6,7 +6,7 @@ import type { GameSettings } from './types/GameTypes';
 
 import LoadingScreen from './components/screens/LoadingScreen';
 import HUD           from './components/hud/HUD';
-import PauseMenu     from './components/pauseMenu/pauseMenu';
+import PauseMenu     from './components/pauseMenu/PauseMenu';
 import { GameOverOverlay, VictoryOverlay } from './components/overlays/GameOverlays';
 import FrogComponent from './components/Frog';
 import Obstacle      from './components/Obstacles';
