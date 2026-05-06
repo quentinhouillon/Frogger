@@ -64,6 +64,16 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
 
     if (!gameState) return <LoadingScreen />;
 
+    // Écran d'attente réseau — affiché seul, sans le canvas de jeu derrière
+    if (gameState.waitingForPlayer2) {
+        return (
+            <div className="min-h-screen w-screen flex flex-col items-center justify-center select-none"
+                 style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
+                <WaitingScreen onBack={handleBackToMenu} />
+            </div>
+        );
+    }
+
     const isDead  = gameState.gameOver;
     const isWin   = gameState.gameWon;
     const isMulti = gameState.multiplayerMode;
@@ -168,14 +178,13 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     )}
 
                     <GameOverOverlay isVisible={isDead} onReset={handleRestart} onMenu={handleBackToMenu}
-                                     highScores={gameState.highScores} />
+                                     highScores={gameState.highScores}
+                                     breakdown={gameState.scoreBreakdown}
+                                     breakdown2={gameState.scoreBreakdown2} />
                     <VictoryOverlay  isVisible={isWin}  onReset={handleRestart} onMenu={handleBackToMenu}
-                                     highScores={gameState.highScores} winner={gameState.winner} />
-
-                    {/* Écran d'attente réseau */}
-                    {gameState.waitingForPlayer2 && (
-                        <WaitingScreen onBack={handleBackToMenu} />
-                    )}
+                                     highScores={gameState.highScores} winner={gameState.winner}
+                                     breakdown={gameState.scoreBreakdown}
+                                     breakdown2={gameState.scoreBreakdown2} />
                 </motion.div>
             </div>
 

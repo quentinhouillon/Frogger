@@ -46,12 +46,30 @@ export interface HighScoreEntry {
     date:  string;
 }
 
+export interface ScoreBreakdown {
+    lanePoints:    number;  // pts gagnés en avançant
+    arrivalPoints: number;  // bonus d'arrivée (base + combo)
+    timePoints:    number;  // bonus de temps cumulé
+    livesPoints:   number;  // bonus de vies en fin de partie
+    deathPenalty:  number;  // total des pénalités (valeur positive)
+    deaths:        number;  // nombre de morts
+    total:         number;  // score final
+}
+
 export interface GameState {
     screenWidth:    number;
     screenHeight:   number;
     score:          number;
+    score2:         number;
     lifes:          number;
+    lifes2:         number;
     maxLifes:       number;
+    combo:          number;        // arrivées consécutives sans mort J1
+    combo2:         number;        // arrivées consécutives sans mort J2
+    timeLeft:       number;        // secondes restantes pour la traversée J1 (0-30)
+    timeLeft2:      number;        // secondes restantes pour la traversée J2 (0-30)
+    scoreBreakdown:  ScoreBreakdown | null;
+    scoreBreakdown2: ScoreBreakdown | null;
     gameOver:       boolean;
     gameWon:        boolean;
     multiplayerMode: boolean;
@@ -63,8 +81,6 @@ export interface GameState {
     lanes:          Lane[];
     lilySlots:      LilySlot[];
     lilySlots2:     LilySlot[] | null;
-    score2:         number;
-    lifes2:         number;
     highScores:        HighScoreEntry[];
     waitingForPlayer2: boolean;
 }
