@@ -279,9 +279,10 @@ export const GameOverOverlay: React.FC<OverlayProps> = (props) => (
 );
 
 export const VictoryOverlay: React.FC<OverlayProps> = ({ winner, ...props }) => {
+    const isSinglePlayer = !props.breakdown2;
     const theme: OverlayTheme = {
         ...winTheme,
-        title: winner === 1 ? 'Joueur 1 gagne !'
+        title: winner === 1 ? (isSinglePlayer ? 'Victoire !' : 'Joueur 1 gagne !')
              : winner === 2 ? 'Joueur 2 gagne !'
              : winTheme.title,
     };
