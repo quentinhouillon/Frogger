@@ -1,17 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { Screen } from '../../App';
+import type { GameMode } from '../../types/GameTypes';
 
-interface Props { onNavigate: (s: Screen) => void; }
+interface Props {
+    onNavigate: (s: Screen) => void;
+    onPlay:     (mode: GameMode) => void;
+}
 
-const buttons: { label: string; screen: Screen; color: string }[] = [
-    { label: 'JOUER',           screen: 'game',     color: '#50ff8c' },
-    { label: 'MEILLEURS SCORES', screen: 'scores',  color: '#ffd700' },
-    { label: 'PARAMÈTRES',      screen: 'settings', color: '#80cfff' },
-    { label: 'CRÉDITS',         screen: 'credits',  color: '#cf9fff' },
+const navButtons: { label: string; screen: Screen; color: string }[] = [
+    { label: 'MEILLEURS SCORES', screen: 'scores',   color: '#ffd700' },
+    { label: 'PARAMÈTRES',       screen: 'settings', color: '#80cfff' },
+    { label: 'CRÉDITS',          screen: 'credits',  color: '#cf9fff' },
 ];
 
-const MenuScreen: React.FC<Props> = ({ onNavigate }) => (
+const MenuScreen: React.FC<Props> = ({ onNavigate, onPlay }) => (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center gap-10 select-none"
          style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
 
@@ -31,10 +34,50 @@ const MenuScreen: React.FC<Props> = ({ onNavigate }) => (
             </p>
         </motion.div>
 
-        {/* Boutons */}
+        {/* Boutons de jeu */}
         <motion.div className="flex flex-col gap-3 w-64"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-            {buttons.map(({ label, screen, color }, i) => (
+
+            {/* 1 Joueur */}
+            <motion.button
+                onClick={() => onPlay('single')}
+                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                style={{ borderColor: '#50ff8c55', color: '#50ff8c', background: 'transparent' }}
+                whileHover={{ scale: 1.04, borderColor: '#50ff8c', boxShadow: '0 0 20px #50ff8c44' }}
+                whileTap={{ scale: 0.97 }}
+                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}>
+                🐸 1 JOUEUR
+            </motion.button>
+
+            {/* 2 Joueurs local */}
+            <motion.button
+                onClick={() => onPlay('multi')}
+                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                style={{ borderColor: '#ff8c5055', color: '#ff8c50', background: 'transparent' }}
+                whileHover={{ scale: 1.04, borderColor: '#ff8c50', boxShadow: '0 0 20px #ff8c5044' }}
+                whileTap={{ scale: 0.97 }}
+                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.42 }}>
+                🐸🐸 2 JOUEURS (LOCAL)
+            </motion.button>
+
+            {/* 2 Joueurs en ligne */}
+            <motion.button
+                onClick={() => onPlay('network')}
+                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                style={{ borderColor: '#80cfff55', color: '#80cfff', background: 'transparent' }}
+                whileHover={{ scale: 1.04, borderColor: '#80cfff', boxShadow: '0 0 20px #80cfff44' }}
+                whileTap={{ scale: 0.97 }}
+                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.49 }}>
+                🌐 2 JOUEURS (EN LIGNE)
+            </motion.button>
+
+            <div className="border-t border-white/10 my-1" />
+
+            {/* Navigation */}
+            {navButtons.map(({ label, screen, color }, i) => (
                 <motion.button
                     key={screen}
                     onClick={() => onNavigate(screen)}
@@ -42,10 +85,8 @@ const MenuScreen: React.FC<Props> = ({ onNavigate }) => (
                     style={{ borderColor: color + '55', color, background: 'transparent' }}
                     whileHover={{ scale: 1.04, borderColor: color, boxShadow: `0 0 20px ${color}44` }}
                     whileTap={{ scale: 0.97 }}
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0,   opacity: 1 }}
-                    transition={{ delay: 0.35 + i * 0.07 }}
-                >
+                    initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.52 + i * 0.07 }}>
                     {label}
                 </motion.button>
             ))}

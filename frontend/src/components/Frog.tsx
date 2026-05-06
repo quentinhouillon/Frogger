@@ -5,6 +5,7 @@ import frogSprite from '../sprites/frog_idle.png';
 
 interface FrogProps {
     data: FrogType;
+    tint?: 'green' | 'blue';
 }
 
 /** Rotation (degrés) selon la direction du dernier saut */
@@ -25,7 +26,7 @@ function rotationFromDelta(dx: number, dy: number): number {
  *  - Shake + fondu à la mort
  *  - Glow selon l'état
  */
-const Frog: React.FC<FrogProps> = ({ data }) => {
+const Frog: React.FC<FrogProps> = ({ data, tint }) => {
     const prevPos  = useRef({ x: data.x, y: data.y });
     const [rotation, setRotation] = useState(0);
     const [isJumping, setIsJumping] = useState(false);
@@ -47,11 +48,12 @@ const Frog: React.FC<FrogProps> = ({ data }) => {
         }
     }, [data.x, data.y]);
 
+    const tintFilter = tint === 'blue' ? 'hue-rotate(200deg) saturate(1.5)' : '';
     const filter = isDead
-        ? 'drop-shadow(0 0 10px #ff4444) saturate(0.2) brightness(0.5)'
+        ? `drop-shadow(0 0 10px #ff4444) saturate(0.2) brightness(0.5) ${tintFilter}`
         : isWin
-        ? 'drop-shadow(0 0 14px #44ff88) brightness(1.3)'
-        : 'drop-shadow(0 2px 6px rgba(0,0,0,0.9))';
+        ? `drop-shadow(0 0 14px #44ff88) brightness(1.3) ${tintFilter}`
+        : `drop-shadow(0 2px 6px rgba(0,0,0,0.9)) ${tintFilter}`;
 
     return (
         <motion.div
