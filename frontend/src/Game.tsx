@@ -2,18 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
 import { wsService } from './services/WebsocketService';
-<<<<<<< HEAD
+import soundManager from './services/SoundService';
 import type { GameSettings } from './types/GameTypes';
-=======
-import type { GameState } from './types/GameTypes';
-import Frog from './components/Frog';
-import Obstacle from './components/Obstacles';
-import PauseMenu from './components/PauseMenu';
-
-
-import roadSprite from './sprites/tile_road.png';
-import lakeSprite from './sprites/tile_water.png';
->>>>>>> 04f424f51ef558fbdeb6575a61afacb2dba4e729
 
 import LoadingScreen from './components/screens/LoadingScreen';
 import WaitingScreen from './components/screens/WaitingScreen';
@@ -47,18 +37,18 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
     const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft } =
         useGameLogic(settings, isPaused);
 
-<<<<<<< HEAD
     // Retour au menu si l'adversaire se déconnecte en mode réseau
     useEffect(() => {
         if (opponentLeft) onBackToMenu();
     }, [opponentLeft, onBackToMenu]);
-=======
-    useEffect(() =>
-        wsService.connect('ws://localhost:8080');
-        const unsubscribe = wsService.subscribe((data: GameState) => setGameState(data));
-        return () => { unsubscribe(); wsService.disconnect(); };
+
+    useEffect(() => {
+        soundManager.loadAllSounds();
+        soundManager.playSound('soundtrack');
+        return () => {
+            soundManager.stopSound('soundtrack');
+        };
     }, []);
->>>>>>> 04f424f51ef558fbdeb6575a61afacb2dba4e729
 
     // Touche Escape pour pause / reprise
     useEffect(() => {

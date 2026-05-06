@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { wsService } from '../services/WebsocketService';
+import soundManager from '../services/SoundService';
 import type { GameState, GameSettings } from '../types/GameTypes';
 
 const LANE_HEIGHT = 50;
@@ -20,6 +21,8 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
     const [myPlayerNumber, setMyPlayerNumber] = useState<1 | 2 | null>(null);
     const [opponentLeft, setOpponentLeft]     = useState(false);
     const prevFrogState                       = useRef<string>('LIVING');
+    const prevScore                          = useRef(0);
+    const prevParkedFrogs                    = useRef(0);
     const [deathBurst, setDeathBurst]         = useState<DeathBurstState | null>(null);
     const settingsRef                         = useRef(settings);
     settingsRef.current                       = settings;
@@ -75,11 +78,31 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
                 frog.y <  lane.positionY + LANE_HEIGHT
             );
             setDeathBurst({ x: frog.x, y: frog.y, type: inRiver ? 'river' : 'road' });
+            soundManager.playSound('death');
             const t = setTimeout(() => setDeathBurst(null), 1500);
             return () => clearTimeout(t);
         }
 
         prevFrogState.current = frog.state;
+    }, [gameState]);
+
+    useEffect(() => {
+        if (!gameState) return;
+
+        const scoreDelta = gameState.score - prevScore.current;
+        const parkedGrowth = gameState.parkedFrogs.length - prevParkedFrogs.current;
+
+        if (parkedGrowth > 0) {
+            soundManager.playSound('frogPickup');
+            if (scoreDelta >= 50) soundManager.playSound('extraScore');
+            else if (scoreDelta > 0) soundManager.playSound('score');
+        } else if (scoreDelta > 0) {
+            if (scoreDelta >= 50) soundManager.playSound('extraScore');
+            else soundManager.playSound('score');
+        }
+
+        prevScore.current = gameState.score;
+        prevParkedFrogs.current = gameState.parkedFrogs.length;
     }, [gameState]);
 
     /* ── Clavier ──────────────────────────────────────────────────────── */
@@ -116,6 +139,7 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             if (!cmd || holdTimeout || repeatInterval) return;
             e.preventDefault();
             wsService.send(cmd);
+            soundManager.playSound('move');
             holdTimeout = setTimeout(() => {
                 repeatInterval = setInterval(() => wsService.send(cmd), REPEAT_INTERVAL_MS);
             }, INITIAL_DELAY_MS);
