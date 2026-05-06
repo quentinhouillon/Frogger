@@ -8,6 +8,7 @@ import SettingsScreen from './components/menu/SettingsScreen';
 import CreditsScreen  from './components/menu/CreditsScreen';
 
 import { wsService } from './services/WebsocketService';
+import soundManager from './services/SoundService';
 import type { GameSettings, GameMode, HighScoreEntry, GameState } from './types/GameTypes';
 
 export type Screen = 'menu' | 'game' | 'scores' | 'settings' | 'credits';
@@ -23,6 +24,7 @@ function App() {
     const pendingMode = useRef<GameMode>('single');
 
     useEffect(() => {
+        soundManager.loadAllSounds();
         wsService.connect('ws://localhost:8080');
         const unsub = wsService.subscribe((data: GameState) => {
             if (data.highScores) setHighScores(data.highScores);

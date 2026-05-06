@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
 import { wsService } from './services/WebsocketService';
+import soundManager from './services/SoundService';
 import type { GameSettings } from './types/GameTypes';
 
 import LoadingScreen from './components/screens/LoadingScreen';
@@ -40,6 +41,14 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
     useEffect(() => {
         if (opponentLeft) onBackToMenu();
     }, [opponentLeft, onBackToMenu]);
+
+    useEffect(() => {
+        soundManager.loadAllSounds();
+        soundManager.playSound('soundtrack');
+        return () => {
+            soundManager.stopSound('soundtrack');
+        };
+    }, []);
 
     // Touche Escape pour pause / reprise
     useEffect(() => {
