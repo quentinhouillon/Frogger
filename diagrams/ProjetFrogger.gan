@@ -10,6 +10,7 @@
         <option id="filter.overdueTasks" value="false"/>
         <option id="filter.inProgressTodayTasks" value="false"/>
         <option id="color.recent"><![CDATA[#0099ff #f4f4f4]]></option>
+        <option id="color.recent"><![CDATA[#0099ff #f4f4f4]]></option>
     </view>
     <view id="resource-table">
         <field id="0" name="Nom" width="210" order="0"/>
@@ -43,6 +44,7 @@
             <depend id="1" type="2" difference="0" hardness="Strong"/>
         </task>
         <task id="1" uid="01963ff407874cff963f2535c8b936ee" name="Model(MVC)" meeting="false" start="2026-02-04" duration="16" complete="100" priority="2" expand="true">
+        <task id="1" uid="01963ff407874cff963f2535c8b936ee" name="Model(MVC)" meeting="false" start="2026-02-04" duration="16" complete="100" priority="2" expand="true">
             <depend id="4" type="2" difference="0" hardness="Strong"/>
             <depend id="5" type="2" difference="0" hardness="Strong"/>
             <task id="8" uid="a172f88ab4174f4693815a3e6d99ecbc" name="Implémentation de la class Entity" meeting="false" start="2026-02-04" duration="7" complete="100" priority="2" expand="true">
@@ -66,8 +68,10 @@
             <task id="20" uid="426fdb2ad434403981b674be21a08c51" name="Gestion de mode multi-joueurs" meeting="false" start="2026-05-04" duration="3" complete="60" thirdDate="2026-05-04" thirdDate-constraint="1" expand="true"/>
         </task>
         <task id="5" uid="2d71a2d00fb14d05ba6e1781b28bd2a9" name="Controleur(MVC)" meeting="false" start="2026-02-26" duration="42" complete="80" expand="true">
+        <task id="5" uid="2d71a2d00fb14d05ba6e1781b28bd2a9" name="Controleur(MVC)" meeting="false" start="2026-02-26" duration="42" complete="80" expand="true">
             <depend id="7" type="2" difference="0" hardness="Strong"/>
         </task>
+        <task id="7" uid="0a87214a136143ef8b0d1597f2538c74" name="Test" meeting="false" start="2026-04-27" duration="7" complete="0" expand="true"/>
         <task id="7" uid="0a87214a136143ef8b0d1597f2538c74" name="Test" meeting="false" start="2026-04-27" duration="7" complete="0" expand="true"/>
         <task id="6" uid="2b8b1f9718e3413c89b849d300d9f627" name="Préparation de la présentation" meeting="false" start="2026-04-22" duration="13" complete="0" expand="true"/>
     </tasks>
@@ -77,6 +81,7 @@
         <resource id="2" name="Daril" function="SoftwareDevelopment:2" contacts="" phone=""/>
     </resources>
     <allocations>
+        <allocation task-id="0" resource-id="0" function="Default:1" responsible="true" load="60.0"/>
         <allocation task-id="0" resource-id="0" function="Default:1" responsible="true" load="60.0"/>
         <allocation task-id="9" resource-id="0" function="Default:1" responsible="true" load="100.0"/>
         <allocation task-id="5" resource-id="0" function="Default:1" responsible="false" load="20.0"/>
