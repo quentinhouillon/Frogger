@@ -76,7 +76,7 @@ class WebSocketService {
                 // Room assignment message from server
                 if (data && data.type === 'room' && typeof data.roomId === 'string') {
                     this.roomId = data.roomId;
-                    try { sessionStorage.setItem('frogger_roomId', this.roomId); } catch (e) { /* ignore */ }
+                    try { if (this.roomId) sessionStorage.setItem('frogger_roomId', this.roomId); } catch (e) { /* ignore */ }
                 }
                 this.listeners.forEach(l => l(data));
             } catch (e) {
