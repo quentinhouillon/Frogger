@@ -5,7 +5,7 @@ WORKDIR /workspace/frontend
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --config.unsafe-perm=true
 
 COPY . .
 
