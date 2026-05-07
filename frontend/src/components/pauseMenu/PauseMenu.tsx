@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import type { FC } from 'react'
 import type { GameSettings } from '../../types/GameTypes';
 import soundManager from '../../services/SoundService';
 
@@ -11,8 +12,7 @@ interface Props {
     onSettingsChange: (newSettings: GameSettings) => void
 }
 
-export const PauseMenu: React.FC<Props> = ({ isPaused, onResume, onRestart, onMenu, settings, onSettingsChange }) => {
-    const [isMuted, setIsMuted] = useState(false)
+export const PauseMenu: FC<Props> = ({ isPaused, onResume, onRestart, onMenu, settings, onSettingsChange }) => {
     const [showAudioSettings, setShowAudioSettings] = useState(false)
 
     if (!isPaused) return null
