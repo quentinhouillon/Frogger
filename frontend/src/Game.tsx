@@ -35,21 +35,19 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
     const [isPaused, setIsPaused] = useState(false);
+    const [gameSettings, setGameSettings] = useState(settings);
     const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft } =
-        useGameLogic(settings, isPaused);
+        useGameLogic(gameSettings, isPaused);
 
     // Retour au menu si l'adversaire se déconnecte en mode réseau
     useEffect(() => {
         if (opponentLeft) onBackToMenu();
     }, [opponentLeft, onBackToMenu]);
 
+    // Mets à jour le volume des effets sonores quand les paramètres changent (ne touche plus la musique)
     useEffect(() => {
-        soundManager.loadAllSounds();
-        soundManager.playSound('soundtrack');
-        return () => {
-            soundManager.stopSound('soundtrack');
-        };
-    }, []);
+        soundManager.setSfxVolume(gameSettings.sfxVolume);
+    }, [gameSettings.sfxVolume]);
 
     // Touche Escape pour pause / reprise
     useEffect(() => {
@@ -62,6 +60,13 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    // Arr\u00eate la musique quand le jeu finit
+    useEffect(() => {
+        if (gameState?.gameOver || gameState?.gameWon) {
+            soundManager.stopSound('soundtrack');
+        }
+    }, [gameState?.gameOver, gameState?.gameWon]);
 
     // Notifie le serveur du changement de pause
     useEffect(() => {
@@ -223,7 +228,8 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
 
             {isPaused && (
                 <PauseMenu isPaused={isPaused} onResume={handleResume}
-                           onMenu={handleBackToMenu} onRestart={handleRestart} />
+                           onMenu={handleBackToMenu} onRestart={handleRestart}
+                           settings={gameSettings} onSettingsChange={setGameSettings} />
             )}
 
             <p className="text-xs text-white/30 tracking-wide m-0">

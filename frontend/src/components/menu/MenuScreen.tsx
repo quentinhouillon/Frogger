@@ -14,84 +14,86 @@ const navButtons: { label: string; screen: Screen; color: string }[] = [
     { label: 'CRÉDITS',          screen: 'credits',  color: '#cf9fff' },
 ];
 
-const MenuScreen: React.FC<Props> = ({ onNavigate, onPlay }) => (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center gap-10 select-none"
-         style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
+const MenuScreen: React.FC<Props> = ({ onNavigate, onPlay }) => {
+    return (
+        <div className="min-h-screen w-screen flex flex-col items-center justify-center gap-10 select-none"
+             style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
 
-        {/* Titre */}
-        <motion.div className="flex flex-col items-center gap-2"
-            initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
-            <motion.span className="text-7xl"
-                animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}>
-                🐸
-            </motion.span>
-            <h1 className="font-[family-name:var(--font-orbitron)] text-5xl font-black tracking-[0.2em] text-[#50ff8c] m-0"
-                style={{ textShadow: '0 0 30px rgba(80,255,140,0.5)' }}>
-                FROGGER
-            </h1>
-            <p className="font-[family-name:var(--font-orbitron)] text-xs tracking-[0.3em] text-[#50ff8c]/40 m-0 uppercase">
-                Traverse. Survive. Conquer.
-            </p>
-        </motion.div>
+            {/* Titre */}
+            <motion.div className="flex flex-col items-center gap-2"
+                initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
+                <motion.span className="text-7xl"
+                    animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}>
+                    🐸
+                </motion.span>
+                <h1 className="font-[family-name:var(--font-orbitron)] text-5xl font-black tracking-[0.2em] text-[#50ff8c] m-0"
+                    style={{ textShadow: '0 0 30px rgba(80,255,140,0.5)' }}>
+                    FROGGER
+                </h1>
+                <p className="font-[family-name:var(--font-orbitron)] text-xs tracking-[0.3em] text-[#50ff8c]/40 m-0 uppercase">
+                    Traverse. Survive. Conquer.
+                </p>
+            </motion.div>
 
-        {/* Boutons de jeu */}
-        <motion.div className="flex flex-col gap-3 w-64"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+            {/* Boutons de jeu */}
+            <motion.div className="flex flex-col gap-3 w-64"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
 
-            {/* 1 Joueur */}
-            <motion.button
-                onClick={() => onPlay('single')}
-                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
-                style={{ borderColor: '#50ff8c55', color: '#50ff8c', background: 'transparent' }}
-                whileHover={{ scale: 1.04, borderColor: '#50ff8c', boxShadow: '0 0 20px #50ff8c44' }}
-                whileTap={{ scale: 0.97 }}
-                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.35 }}>
-                🐸 1 JOUEUR
-            </motion.button>
-
-            {/* 2 Joueurs local */}
-            <motion.button
-                onClick={() => onPlay('multi')}
-                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
-                style={{ borderColor: '#ff8c5055', color: '#ff8c50', background: 'transparent' }}
-                whileHover={{ scale: 1.04, borderColor: '#ff8c50', boxShadow: '0 0 20px #ff8c5044' }}
-                whileTap={{ scale: 0.97 }}
-                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.42 }}>
-                🐸🐸 2 JOUEURS (LOCAL)
-            </motion.button>
-
-            {/* 2 Joueurs en ligne */}
-            <motion.button
-                onClick={() => onPlay('network')}
-                className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
-                style={{ borderColor: '#80cfff55', color: '#80cfff', background: 'transparent' }}
-                whileHover={{ scale: 1.04, borderColor: '#80cfff', boxShadow: '0 0 20px #80cfff44' }}
-                whileTap={{ scale: 0.97 }}
-                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.49 }}>
-                🌐 2 JOUEURS (EN LIGNE)
-            </motion.button>
-
-            <div className="border-t border-white/10 my-1" />
-
-            {/* Navigation */}
-            {navButtons.map(({ label, screen, color }, i) => (
+                {/* 1 Joueur */}
                 <motion.button
-                    key={screen}
-                    onClick={() => onNavigate(screen)}
+                    onClick={() => onPlay('single')}
                     className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
-                    style={{ borderColor: color + '55', color, background: 'transparent' }}
-                    whileHover={{ scale: 1.04, borderColor: color, boxShadow: `0 0 20px ${color}44` }}
+                    style={{ borderColor: '#50ff8c55', color: '#50ff8c', background: 'transparent' }}
+                    whileHover={{ scale: 1.04, borderColor: '#50ff8c', boxShadow: '0 0 20px #50ff8c44' }}
                     whileTap={{ scale: 0.97 }}
                     initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.52 + i * 0.07 }}>
-                    {label}
+                    transition={{ delay: 0.35 }}>
+                    🐸 1 JOUEUR
                 </motion.button>
-            ))}
-        </motion.div>
-    </div>
-);
+
+                {/* 2 Joueurs local */}
+                <motion.button
+                    onClick={() => onPlay('multi')}
+                    className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                    style={{ borderColor: '#ff8c5055', color: '#ff8c50', background: 'transparent' }}
+                    whileHover={{ scale: 1.04, borderColor: '#ff8c50', boxShadow: '0 0 20px #ff8c5044' }}
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.42 }}>
+                    🐸🐸 2 JOUEURS (LOCAL)
+                </motion.button>
+
+                {/* 2 Joueurs en ligne */}
+                <motion.button
+                    onClick={() => onPlay('network')}
+                    className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                    style={{ borderColor: '#80cfff55', color: '#80cfff', background: 'transparent' }}
+                    whileHover={{ scale: 1.04, borderColor: '#80cfff', boxShadow: '0 0 20px #80cfff44' }}
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.49 }}>
+                    🌐 2 JOUEURS (EN LIGNE)
+                </motion.button>
+
+                <div className="border-t border-white/10 my-1" />
+
+                {/* Navigation */}
+                {navButtons.map(({ label, screen, color }, i) => (
+                    <motion.button
+                        key={screen}
+                        onClick={() => onNavigate(screen)}
+                        className="w-full py-3 rounded-xl font-[family-name:var(--font-orbitron)] font-black tracking-widest text-sm border-2 transition-all cursor-pointer"
+                        style={{ borderColor: color + '55', color, background: 'transparent' }}
+                        whileHover={{ scale: 1.04, borderColor: color, boxShadow: `0 0 20px ${color}44` }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.52 + i * 0.07 }}>
+                        {label}
+                    </motion.button>
+                ))}
+            </motion.div>
+        </div>
+    );
+};
 
 export default MenuScreen;

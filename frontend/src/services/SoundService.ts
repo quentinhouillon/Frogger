@@ -15,20 +15,54 @@ const soundFiles: Record<string, string> = {
 
 const soundManager = {
   sounds: {} as Record<string, Howl>,
+  musicVolume: 35,      // 0-100
+  sfxVolume: 100,       // 0-100
 
   loadAllSounds(): void {
     Object.entries(soundFiles).forEach(([name, src]) => {
+      const prev = this.sounds[name];
+      if (prev) {
+        try { prev.unload(); } catch (e) { /* ignore */ }
+      }
+      const isMusic = name === 'soundtrack';
       this.sounds[name] = new Howl({
         src: [src],
-        loop: name === 'soundtrack',
-        volume: name === 'soundtrack' ? 0.35 : 1.0,
+        loop: isMusic,
+        volume: isMusic ? this.musicVolume / 100 : this.sfxVolume / 100,
         preload: true,
       });
     });
   },
 
+  setMusicVolume(percent: number): void {
+    this.musicVolume = Math.max(0, Math.min(100, percent));
+    const soundtrack = this.sounds.soundtrack;
+    if (soundtrack) {
+      soundtrack.volume(this.musicVolume / 100);
+    }
+  },
+
+  setSfxVolume(percent: number): void {
+    this.sfxVolume = Math.max(0, Math.min(100, percent));
+    Object.entries(this.sounds).forEach(([name, sound]) => {
+      if (name !== 'soundtrack' && sound) {
+        sound.volume(this.sfxVolume / 100);
+      }
+    });
+  },
+
   playSound(name: string): number | undefined {
-    return this.sounds[name]?.play();
+    const sound = this.sounds[name];
+    if (!sound) return undefined;
+    // Pour la musique (soundtrack), vérifie si elle joue déjà
+    if (name === 'soundtrack' && sound.playing()) {
+      return undefined; // Déjà en cours de lecture
+    }
+    // Arrête tous les sons de même type avant de rejouer (évite les chevauchements)
+    if (name === 'soundtrack') {
+      sound.stop();
+    }
+    return sound.play();
   },
 
   stopSound(name: string): void {
