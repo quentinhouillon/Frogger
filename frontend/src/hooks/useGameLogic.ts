@@ -72,6 +72,7 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
         const { frog, lanes } = gameState;
 
         if (frog.state === 'DEAD' && prevFrogState.current !== 'DEAD') {
+            prevFrogState.current = 'DEAD'; // empêche les ticks suivants de re-déclencher
             const inRiver = lanes.some(lane =>
                 lane.laneType === 'RIVER' &&
                 frog.y >= lane.positionY &&

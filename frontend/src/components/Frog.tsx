@@ -6,6 +6,7 @@ import frogSprite from '../sprites/frog_idle.png';
 interface FrogProps {
     data: FrogType;
     tint?: 'green' | 'blue';
+    deathType?: 'road' | 'river';
 }
 
 /** Rotation (degrés) selon la direction du dernier saut */
@@ -26,7 +27,7 @@ function rotationFromDelta(dx: number, dy: number): number {
  *  - Shake + fondu à la mort
  *  - Glow selon l'état
  */
-const Frog: React.FC<FrogProps> = ({ data, tint }) => {
+const Frog: React.FC<FrogProps> = ({ data, tint, deathType }) => {
     const prevPos  = useRef({ x: data.x, y: data.y });
     const [rotation, setRotation] = useState(0);
     const [isJumping, setIsJumping] = useState(false);
@@ -49,11 +50,27 @@ const Frog: React.FC<FrogProps> = ({ data, tint }) => {
     }, [data.x, data.y]);
 
     const tintFilter = tint === 'blue' ? 'hue-rotate(200deg) saturate(1.5)' : '';
+
+    // Filtre selon état + type de mort
     const filter = isDead
-        ? `drop-shadow(0 0 10px #ff4444) saturate(0.2) brightness(0.5) ${tintFilter}`
+        ? deathType === 'river'
+            ? `drop-shadow(0 0 12px #0088ff) saturate(0.1) brightness(0.35) hue-rotate(160deg) ${tintFilter}`
+            : `drop-shadow(0 0 16px #ff6600) saturate(0) brightness(0.4) sepia(1) hue-rotate(-20deg) ${tintFilter}`
         : isWin
         ? `drop-shadow(0 0 14px #44ff88) brightness(1.3) ${tintFilter}`
         : `drop-shadow(0 2px 6px rgba(0,0,0,0.9)) ${tintFilter}`;
+
+    // Rotation à la mort : spin violent pour voiture, wobble pour eau
+    const deathRotate = deathType === 'river'
+        ? [rotation, rotation + 10, rotation - 7, rotation + 4, rotation]
+        : [rotation, rotation - 25, rotation + 50, rotation + 360 + 180];
+
+    // Échelle à la mort : squash brutal pour voiture, descente lente pour eau
+    const deathScale = deathType === 'river'
+        ? [1, 0.85, 0.65, 0.35, 0.05]
+        : [1, 1.4, 0.08, 0];
+
+    const deathDuration = deathType === 'river' ? 0.9 : 0.42;
 
     return (
         <motion.div
@@ -72,18 +89,13 @@ const Frog: React.FC<FrogProps> = ({ data, tint }) => {
                 originY:           '50%',
             }}
             animate={{
-                // Position : spring physique pour un mouvement net
                 x: data.x,
                 y: data.y,
 
-                // Rotation : direction du saut, shake à la mort
-                rotate: isDead
-                    ? [0, -20, 20, -12, 12, 0]
-                    : rotation,
+                rotate: isDead ? deathRotate : rotation,
 
-                // Échelle : squeeze puis étirement au saut, spin à la mort
                 scale: isDead
-                    ? [1, 1.5, 0]
+                    ? deathScale
                     : isJumping
                     ? [1, 0.7, 1.2, 1]
                     : 1,
@@ -91,8 +103,8 @@ const Frog: React.FC<FrogProps> = ({ data, tint }) => {
             transition={{
                 x:      { type: 'spring', stiffness: 1200, damping: 40 },
                 y:      { type: 'spring', stiffness: 1200, damping: 40 },
-                rotate: { duration: isDead ? 0.35 : 0.08 },
-                scale:  { duration: isDead ? 0.35 : 0.10, ease: 'easeOut' },
+                rotate: { duration: isDead ? deathDuration : 0.08 },
+                scale:  { duration: isDead ? deathDuration : 0.10, ease: isDead ? 'easeIn' : 'easeOut' },
             }}
         />
     );

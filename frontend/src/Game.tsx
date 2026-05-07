@@ -13,6 +13,7 @@ import { GameOverOverlay, VictoryOverlay } from './components/overlays/GameOverl
 import FrogComponent from './components/Frog';
 import Obstacle      from './components/Obstacles';
 import DeathBurst    from './components/effects/DeathBurst';
+import WaterRipple   from './components/effects/WaterRipple';
 
 import roadSprite     from './sprites/tile_road.png';
 import lakeSprite     from './sprites/tile_water.png';
@@ -177,13 +178,36 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     ))}
 
                     {/* Grenouilles actives */}
-                    <FrogComponent data={gameState.frog} />
+                    <FrogComponent data={gameState.frog} deathType={deathBurst?.type} />
                     {isMulti && gameState.frog2 && (
-                        <FrogComponent data={gameState.frog2} tint="blue" />
+                        <FrogComponent data={gameState.frog2} tint="blue" deathType={deathBurst?.type} />
                     )}
 
+                    {/* Effets de mort différenciés */}
+                    {deathBurst && deathBurst.type === 'road' && (
+                        <DeathBurst key={`burst-${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
+                    )}
+                    {deathBurst && deathBurst.type === 'river' && (
+                        <WaterRipple key={`ripple-${deathBurst.x}-${deathBurst.y}`} x={deathBurst.x} y={deathBurst.y} />
+                    )}
+
+                    {/* Flash d'écran au moment de l'impact */}
                     {deathBurst && (
-                        <DeathBurst key={`${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
+                        <motion.div
+                            key={`flash-${deathBurst.x}-${deathBurst.y}`}
+                            style={{
+                                position:      'absolute',
+                                inset:         0,
+                                background:    deathBurst.type === 'road'
+                                    ? 'rgba(255, 80, 0, 0.45)'
+                                    : 'rgba(0, 90, 200, 0.35)',
+                                pointerEvents: 'none',
+                                zIndex:        70,
+                            }}
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: 0 }}
+                            transition={{ duration: deathBurst.type === 'road' ? 0.2 : 0.45 }}
+                        />
                     )}
 
                     <GameOverOverlay isVisible={isDead} onReset={handleRestart} onMenu={handleBackToMenu}

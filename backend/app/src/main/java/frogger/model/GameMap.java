@@ -35,6 +35,11 @@ public class GameMap {
     private final ArrayList<LilySlot>  lilySlots;
     private final ArrayList<Frog>      parkedFrogs;
 
+    // Délai (en ticks) avant respawn après mort — laisse le frontend jouer l'animation
+    private int respawnDelay1 = 0;
+    private int respawnDelay2 = 0;
+    private static final int DEATH_ANIM_TICKS = 40; // 40 × 16ms = 640ms
+
     // ── Joueur 2 (multijoueur uniquement, null en solo) ───────────────────────
     private Frog                       frog2;
     private ScoreManager               scoreManager2;
@@ -128,34 +133,39 @@ public class GameMap {
         }
 
         // ── Grenouille 1 ──
-        CollisionManager.CollisionResult r1 = collisionManager.update(frog, lanes, lilySlots, dt);
-        switch (r1) {
-            case DEAD:
-                scoreManager.onFrogDied();
-                score = scoreManager.getScore();
-                combo = scoreManager.getCombo();
-                if (lifes <= 1) {
-                    lifes = 0;
-                    if (multiplayerMode) { winner = 2; scoreManager2.onGameWon(lifes2); score2 = scoreManager2.getScore(); gameWon = true; }
-                    else                  gameOver = true;
-                    return;
-                }
-                respawnFrog1(true);
-                break;
+        if (respawnDelay1 > 0) {
+            if (--respawnDelay1 == 0) spawnFrog1();
+        } else {
+            CollisionManager.CollisionResult r1 = collisionManager.update(frog, lanes, lilySlots, dt);
+            switch (r1) {
+                case DEAD:
+                    scoreManager.onFrogDied();
+                    score = scoreManager.getScore();
+                    combo = scoreManager.getCombo();
+                    if (lifes <= 1) {
+                        lifes = 0;
+                        if (multiplayerMode) { winner = 2; scoreManager2.onGameWon(lifes2); score2 = scoreManager2.getScore(); gameWon = true; }
+                        else                  gameOver = true;
+                        return;
+                    }
+                    lifes--;
+                    respawnDelay1 = DEATH_ANIM_TICKS;
+                    break;
 
-            case LILY_LANDED:
-                landOnSlot(frog, lilySlots, parkedFrogs, scoreManager, 1);
-                if (gameOver || gameWon) return;
-                break;
+                case LILY_LANDED:
+                    landOnSlot(frog, lilySlots, parkedFrogs, scoreManager, 1);
+                    if (gameOver || gameWon) return;
+                    break;
 
-            default:
-                if (frog.getState() == Frog.FrogState.LIVING) {
-                    scoreManager.onFrogMoved(frog.getY());
-                    score          = scoreManager.getScore();
-                    combo          = scoreManager.getCombo();
-                    scoreBreakdown = scoreManager.getBreakdown();
-                }
-                constrainFrog(frog);
+                default:
+                    if (frog.getState() == Frog.FrogState.LIVING) {
+                        scoreManager.onFrogMoved(frog.getY());
+                        score          = scoreManager.getScore();
+                        combo          = scoreManager.getCombo();
+                        scoreBreakdown = scoreManager.getBreakdown();
+                    }
+                    constrainFrog(frog);
+            }
         }
 
         // ── Grenouille 2 (multijoueur) ──
@@ -167,35 +177,40 @@ public class GameMap {
             timeLeft2 = scoreManager2.getTimeLeft();
         }
 
-        CollisionManager.CollisionResult r2 = collisionManager.update(frog2, lanes, lilySlots2, dt);
-        switch (r2) {
-            case DEAD:
-                scoreManager2.onFrogDied();
-                score2 = scoreManager2.getScore();
-                combo2 = scoreManager2.getCombo();
-                if (lifes2 <= 1) {
-                    lifes2 = 0;
-                    winner = 1;
-                    scoreManager.onGameWon(lifes);
-                    score = scoreManager.getScore();
-                    gameWon = true;
-                    return;
-                }
-                respawnFrog2(true);
-                break;
+        if (respawnDelay2 > 0) {
+            if (--respawnDelay2 == 0) spawnFrog2();
+        } else {
+            CollisionManager.CollisionResult r2 = collisionManager.update(frog2, lanes, lilySlots2, dt);
+            switch (r2) {
+                case DEAD:
+                    scoreManager2.onFrogDied();
+                    score2 = scoreManager2.getScore();
+                    combo2 = scoreManager2.getCombo();
+                    if (lifes2 <= 1) {
+                        lifes2 = 0;
+                        winner = 1;
+                        scoreManager.onGameWon(lifes);
+                        score = scoreManager.getScore();
+                        gameWon = true;
+                        return;
+                    }
+                    lifes2--;
+                    respawnDelay2 = DEATH_ANIM_TICKS;
+                    break;
 
-            case LILY_LANDED:
-                landOnSlot(frog2, lilySlots2, parkedFrogs2, scoreManager2, 2);
-                break;
+                case LILY_LANDED:
+                    landOnSlot(frog2, lilySlots2, parkedFrogs2, scoreManager2, 2);
+                    break;
 
-            default:
-                if (frog2.getState() == Frog.FrogState.LIVING) {
-                    scoreManager2.onFrogMoved(frog2.getY());
-                    score2          = scoreManager2.getScore();
-                    combo2          = scoreManager2.getCombo();
-                    scoreBreakdown2 = scoreManager2.getBreakdown();
-                }
-                constrainFrog(frog2);
+                default:
+                    if (frog2.getState() == Frog.FrogState.LIVING) {
+                        scoreManager2.onFrogMoved(frog2.getY());
+                        score2          = scoreManager2.getScore();
+                        combo2          = scoreManager2.getCombo();
+                        scoreBreakdown2 = scoreManager2.getBreakdown();
+                    }
+                    constrainFrog(frog2);
+            }
         }
     }
 
@@ -233,22 +248,34 @@ public class GameMap {
     }
 
     // ── Respawns ──────────────────────────────────────────────────────────────
-    private void respawnFrog1(boolean losesLife) {
-        if (losesLife) lifes--;
-        frog = new Frog(430f, SCREEN_HEIGHT - 40f, 40, 40);
-        if (!losesLife) scoreManager.onFrogRespawn();
+
+    // Crée physiquement une nouvelle grenouille et synchronise les champs de score.
+    // Appelé soit immédiatement (atterrissage nénuphar) soit après le délai d'animation.
+    private void spawnFrog1() {
+        frog           = new Frog(430f, SCREEN_HEIGHT - 40f, 40, 40);
         score          = scoreManager.getScore();
         timeLeft       = scoreManager.getTimeLeft();
         scoreBreakdown = scoreManager.getBreakdown();
     }
 
-    private void respawnFrog2(boolean losesLife) {
-        if (losesLife) lifes2--;
-        frog2 = new Frog(530f, SCREEN_HEIGHT - 40f, 40, 40);
-        if (!losesLife) scoreManager2.onFrogRespawn();
+    private void spawnFrog2() {
+        frog2           = new Frog(530f, SCREEN_HEIGHT - 40f, 40, 40);
         score2          = scoreManager2.getScore();
         timeLeft2       = scoreManager2.getTimeLeft();
         scoreBreakdown2 = scoreManager2.getBreakdown();
+    }
+
+    // Utilisé uniquement lors d'un atterrissage sur nénuphar (pas de perte de vie).
+    private void respawnFrog1(boolean losesLife) {
+        if (losesLife) lifes--;
+        if (!losesLife) scoreManager.onFrogRespawn();
+        spawnFrog1();
+    }
+
+    private void respawnFrog2(boolean losesLife) {
+        if (losesLife) lifes2--;
+        if (!losesLife) scoreManager2.onFrogRespawn();
+        spawnFrog2();
     }
 
     // ── Contrainte écran ──────────────────────────────────────────────────────
