@@ -2,17 +2,15 @@ FROM node:22-alpine AS build
 
 WORKDIR /workspace/frontend
 
-RUN corepack enable
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile --config.unsafe-perm=true
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 
 ARG VITE_WS_URL=ws://localhost:1234
 ENV VITE_WS_URL=${VITE_WS_URL}
 
-RUN pnpm build
+RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
