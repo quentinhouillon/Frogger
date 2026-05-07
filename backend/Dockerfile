@@ -6,12 +6,6 @@ COPY gradle ./gradle
 COPY gradlew settings.gradle gradle.properties ./
 COPY app ./app
 
-# Télécharge le gradle-wrapper.jar manquant
-RUN wget -q https://github.com/gradle/gradle/raw/v$(cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | grep -oP '\d+\.\d+(\.\d+)?')/gradle/wrapper/gradle-wrapper.jar \
-    -O gradle/wrapper/gradle-wrapper.jar || \
-    curl -sL https://github.com/gradle/gradle/raw/v$(cat gradle/wrapper/gradle-wrapper.properties | grep distributionUrl | grep -oP '\d+\.\d+(\.\d+)?')/gradle/wrapper/gradle-wrapper.jar \
-    -o gradle/wrapper/gradle-wrapper.jar
-
 RUN chmod +x ./gradlew && ./gradlew :app:installDist --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
@@ -20,8 +14,8 @@ WORKDIR /opt/frogger
 
 COPY --from=build /workspace/backend/app/build/install/app ./
 
-EXPOSE 1234
+EXPOSE 8080
 
-ENV PORT=1234
+ENV PORT=8080
 
 CMD ["/opt/frogger/bin/app"]

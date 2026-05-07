@@ -4,15 +4,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "1234:1234"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_WS_URL: ws://localhost:8080
+        VITE_WS_URL: ws://localhost:1234
     ports:
-      - "3000:80"
+      - "1267:1267"
     depends_on:
       - backend
