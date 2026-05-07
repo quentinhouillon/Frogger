@@ -7,7 +7,7 @@ import ScoresScreen   from './components/menu/ScoresScreen';
 import SettingsScreen from './components/menu/SettingsScreen';
 import CreditsScreen  from './components/menu/CreditsScreen';
 
-import { wsService } from './services/WebsocketService';
+import { getWebSocketUrl, wsService } from './services/WebsocketService';
 import soundManager from './services/SoundService';
 import type { GameSettings, GameMode, HighScoreEntry, GameState } from './types/GameTypes';
 
@@ -25,7 +25,7 @@ function App() {
 
     useEffect(() => {
         soundManager.loadAllSounds();
-        wsService.connect('ws://localhost:8080');
+        wsService.connect(getWebSocketUrl());
         const unsub = wsService.subscribe((data: GameState) => {
             if (data.highScores) setHighScores(data.highScores);
         });

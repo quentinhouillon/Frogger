@@ -3,6 +3,20 @@ type VoidHandler = () => void;
 
 const RECONNECT_DELAY_MS = 2000;
 
+export function getWebSocketUrl() {
+    const configuredUrl = import.meta.env.VITE_WS_URL as string | undefined;
+    if (configuredUrl && configuredUrl.trim().length > 0) {
+        return configuredUrl;
+    }
+
+    if (typeof window !== 'undefined') {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.hostname}:8080`;
+    }
+
+    return 'ws://localhost:8080';
+}
+
 class WebSocketService {
     private socket:           WebSocket | null = null;
     private listeners:        Set<Listener>    = new Set();

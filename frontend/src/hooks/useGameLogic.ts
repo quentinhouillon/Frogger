@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { wsService } from '../services/WebsocketService';
+import { getWebSocketUrl, wsService } from '../services/WebsocketService';
 import soundManager from '../services/SoundService';
 import type { GameState, GameSettings } from '../types/GameTypes';
 
@@ -43,7 +43,7 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
 
     /* ── WebSocket ────────────────────────────────────────────────────── */
     useEffect(() => {
-        wsService.connect('ws://localhost:8080');
+        wsService.connect(getWebSocketUrl());
 
         const unsubscribe = wsService.subscribe((data: any) => {
             if (data.type === 'init') {
