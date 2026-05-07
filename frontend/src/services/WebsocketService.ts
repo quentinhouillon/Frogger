@@ -26,9 +26,11 @@ class WebSocketService {
     private roomId: string | null = null;
 
     constructor() {
-        // Restore previously used roomId (if any) so reconnects reuse the same room
+        // Restore previously used roomId (if any) so reconnects reuse the same room.
+        // Use sessionStorage (per onglet) instead of localStorage to avoid different
+        // tabs sharing the same room by default.
         try {
-            const stored = localStorage.getItem('frogger_roomId');
+            const stored = sessionStorage.getItem('frogger_roomId');
             if (stored) this.roomId = stored;
         } catch (e) {
             // ignore storage errors
@@ -74,7 +76,7 @@ class WebSocketService {
                 // Room assignment message from server
                 if (data && data.type === 'room' && typeof data.roomId === 'string') {
                     this.roomId = data.roomId;
-                    try { localStorage.setItem('frogger_roomId', this.roomId!); } catch (e) { /* ignore */ }
+                    try { sessionStorage.setItem('frogger_roomId', this.roomId); } catch (e) { /* ignore */ }
                 }
                 this.listeners.forEach(l => l(data));
             } catch (e) {
@@ -133,3 +135,7 @@ class WebSocketService {
 }
 
 export const wsService = new WebSocketService();
+// Expose a typed getter for the current room id
+export function getCurrentRoomId(): string | null {
+    return wsService['roomId'] ?? null;
+}
