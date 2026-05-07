@@ -11,7 +11,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_WS_URL: ws://localhost:1234
+        VITE_WS_URL: ws://72.61.192.139:1234
     ports:
       - "1267:1267"
     depends_on:
