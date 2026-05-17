@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { wsService } from '../services/WebsocketService';
+import { getWebSocketUrl, wsService } from '../services/WebsocketService';
+import soundManager from '../services/SoundService';
 import type { GameState, GameSettings } from '../types/GameTypes';
 
 const LANE_HEIGHT = 50;
@@ -21,6 +22,8 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
     const [myPlayerNumber, setMyPlayerNumber] = useState<1 | 2 | null>(null);
     const [opponentLeft, setOpponentLeft]     = useState(false);
     const prevFrogState                       = useRef<string>('LIVING');
+    const prevScore                          = useRef(0);
+    const prevParkedFrogs                    = useRef(0);
     const [deathBurst, setDeathBurst]         = useState<DeathBurstState | null>(null);
     const [hitFlash, setHitFlash]             = useState(false);
     const [hitFlash2, setHitFlash2]           = useState(false);
@@ -46,7 +49,7 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
 
     /* ── WebSocket ────────────────────────────────────────────────────── */
     useEffect(() => {
-        wsService.connect('ws://localhost:8080');
+        wsService.connect(getWebSocketUrl());
 
         const unsubscribe = wsService.subscribe((data: any) => {
             if (data.type === 'init') {
@@ -95,6 +98,10 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             const deathX = isDead1 ? frog.x : (prevFrogRef.current?.x ?? frog.x);
             const deathY = isDead1 ? frog.y : (prevFrogRef.current?.y ?? frog.y);
 
+            if (frog.state === 'DEAD' && prevFrogState.current !== 'DEAD') {
+                prevFrogState.current = 'DEAD'; // empêche les ticks suivants de re-déclencher
+            }
+
             const inRiver = lanes.some(lane =>
                 lane.laneType === 'RIVER' &&
                 deathY >= lane.positionY &&
@@ -102,11 +109,13 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             );
             
             setDeathBurst({ id: Date.now(), x: deathX, y: deathY, type: inRiver ? 'river' : 'road' });
-            setTimeout(() => setDeathBurst(null), 1500);
+            soundManager.playSound('death');
 
             if (hitTimer.current) clearTimeout(hitTimer.current);
             setHitFlash(true);
             hitTimer.current = setTimeout(() => setHitFlash(false), 900); // 0.3s * 3 = 900ms pour l'anim CSS
+
+            setTimeout(() => setDeathBurst(null), 1500);
         }
 
         prevFrogState.current = frog.state;
@@ -127,6 +136,25 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             prevLifes2.current = lifes2;
             prevFrog2Ref.current = frog2;
         }
+    }, [gameState]);
+
+    useEffect(() => {
+        if (!gameState) return;
+
+        const scoreDelta = gameState.score - prevScore.current;
+        const parkedGrowth = gameState.parkedFrogs.length - prevParkedFrogs.current;
+
+        if (parkedGrowth > 0) {
+            soundManager.playSound('frogPickup');
+            if (scoreDelta >= 50) soundManager.playSound('extraScore');
+            else if (scoreDelta > 0) soundManager.playSound('score');
+        } else if (scoreDelta > 0) {
+            if (scoreDelta >= 50) soundManager.playSound('extraScore');
+            else soundManager.playSound('score');
+        }
+
+        prevScore.current = gameState.score;
+        prevParkedFrogs.current = gameState.parkedFrogs.length;
     }, [gameState]);
 
     /* ── Clavier ──────────────────────────────────────────────────────── */
@@ -151,7 +179,6 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
         };
 
-        // Quand la partie est en pause, on coupe toute répétition clavier
         if (isPaused) {
             stopRepeat();
             return;
@@ -162,6 +189,7 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             if (!cmd || holdTimeout || repeatInterval) return;
             e.preventDefault();
             wsService.send(cmd);
+            soundManager.playSound('move');
             holdTimeout = setTimeout(() => {
                 repeatInterval = setInterval(() => wsService.send(cmd), REPEAT_INTERVAL_MS);
             }, INITIAL_DELAY_MS);

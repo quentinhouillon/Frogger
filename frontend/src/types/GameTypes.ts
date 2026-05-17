@@ -5,6 +5,8 @@ export interface GameSettings {
     slotsCount: 3 | 4 | 5;
     difficulty: Difficulty;
     mode:       GameMode;
+    musicVolume: number;        // 0 à 100
+    sfxVolume:   number;        // 0 à 100
 }
 
 export interface Entity {

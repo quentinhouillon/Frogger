@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import type { GameSettings, Difficulty } from '../../types/GameTypes';
 
@@ -99,7 +99,7 @@ const SettingsScreen: React.FC<Props> = ({ settings, onChange, onBack }) => (
             </div>
 
             {/* Difficulté */}
-            <div className="flex flex-col gap-3">
+            <div className="mb-5 flex flex-col gap-3">
                 <label className="text-xs uppercase tracking-[0.25em] text-[#b4dae7]">Difficulté</label>
                 <div className="flex gap-2 flex-wrap">
                     {DIFF_OPTIONS.map(({ value, label }) => {
@@ -142,6 +142,42 @@ const SettingsScreen: React.FC<Props> = ({ settings, onChange, onBack }) => (
                         );
                     })}
                 </div>
+            </div>
+
+            {/* Volume Musique */}
+            <div className="mb-5 flex flex-col gap-3">
+                <label className="text-xs uppercase tracking-[0.25em] text-[#b4dae7]">
+                    Volume Musique: {settings.musicVolume}%
+                </label>
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.musicVolume}
+                    onChange={(e) => onChange({ ...settings, musicVolume: Number(e.target.value) })}
+                    className="h-2 w-full cursor-pointer rounded-lg appearance-none bg-gradient-to-r from-transparent via-[rgba(140,219,255,0.4)] to-transparent"
+                    style={{
+                        accentColor: 'rgba(140,219,255,0.8)',
+                    }}
+                />
+            </div>
+
+            {/* Volume Effets Sonores */}
+            <div className="flex flex-col gap-3">
+                <label className="text-xs uppercase tracking-[0.25em] text-[#b4dae7]">
+                    Volume Effets: {settings.sfxVolume}%
+                </label>
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.sfxVolume}
+                    onChange={(e) => onChange({ ...settings, sfxVolume: Number(e.target.value) })}
+                    className="h-2 w-full cursor-pointer rounded-lg appearance-none bg-gradient-to-r from-transparent via-[rgba(140,219,255,0.4)] to-transparent"
+                    style={{
+                        accentColor: 'rgba(140,219,255,0.8)',
+                    }}
+                />
             </div>
         </motion.div>
 

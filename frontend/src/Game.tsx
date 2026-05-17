@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
-import { wsService } from './services/WebsocketService';
+import { wsService, getCurrentRoomId } from './services/WebsocketService';
+import soundManager from './services/SoundService';
 import type { GameSettings } from './types/GameTypes';
 
 import LoadingScreen from './components/screens/LoadingScreen';
@@ -13,6 +14,7 @@ import FrogComponent from './components/Frog';
 import ParkedFrog    from './components/ParkedFrog';
 import Obstacle      from './components/Obstacles';
 import DeathBurst    from './components/effects/DeathBurst';
+import WaterRipple   from './components/effects/WaterRipple';
 
 import roadSprite     from './sprites/tile_road.png';
 import lakeSprite     from './sprites/tile_water.png';
@@ -34,15 +36,18 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
     const [isPaused, setIsPaused] = useState(false);
+    const [gameSettings, setGameSettings] = useState(settings);
     const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft, hitFlash, hitFlash2 } =
-        useGameLogic(settings, isPaused);
+        useGameLogic(gameSettings, isPaused);
 
-    // Retour au menu si l'adversaire se déconnecte en mode réseau
     useEffect(() => {
         if (opponentLeft) onBackToMenu();
     }, [opponentLeft, onBackToMenu]);
 
-    // Touche Escape pour pause / reprise
+    useEffect(() => {
+        soundManager.setSfxVolume(gameSettings.sfxVolume);
+    }, [gameSettings.sfxVolume]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && !e.repeat) {
@@ -54,7 +59,12 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Notifie le serveur du changement de pause
+    useEffect(() => {
+        if (gameState?.gameOver || gameState?.gameWon) {
+            soundManager.stopSound('soundtrack');
+        }
+    }, [gameState?.gameOver, gameState?.gameWon]);
+
     useEffect(() => {
         wsService.send(isPaused ? 'PAUSE' : 'RESUME');
     }, [isPaused]);
@@ -65,7 +75,6 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
 
     if (!gameState) return <LoadingScreen />;
 
-    // Écran d'attente réseau — affiché seul, sans le canvas de jeu derrière
     if (gameState.waitingForPlayer2) {
         return (
             <div className="min-h-screen w-screen flex flex-col items-center justify-center select-none"
@@ -113,7 +122,7 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         </div>
                     ))}
 
-                    {/* Slots J1 — vert */}
+                    {/* Slots J1 */}
                     {gameState.lilySlots?.map((slot, i) => (
                         <motion.div key={`s1-${i}`}
                             style={{
@@ -135,7 +144,7 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         />
                     ))}
 
-                    {/* Slots J2 — teinte bleue (multijoueur) */}
+                    {/* Slots J2 */}
                     {isMulti && gameState.lilySlots2?.map((slot, i) => (
                         <motion.div key={`s2-${i}`}
                             style={{
@@ -158,24 +167,46 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                         />
                     ))}
 
-                    {/* Grenouilles garées J1 */}
+                    {/* Parked Frogs */}
                     {gameState.parkedFrogs?.map((pf, i) => (
                         <ParkedFrog key={`p1-${i}`} data={pf} />
                     ))}
 
-                    {/* Grenouilles garées J2 */}
                     {isMulti && gameState.parkedFrogs2?.map((pf, i) => (
                         <ParkedFrog key={`p2-${i}`} data={pf} tint="blue" />
                     ))}
 
-                    {/* Grenouilles actives */}
-                    <FrogComponent data={gameState.frog} hitFlash={hitFlash} />
+                    {/* Active Frogs */}
+                    <FrogComponent data={gameState.frog} hitFlash={hitFlash} deathType={deathBurst?.type} />
                     {isMulti && gameState.frog2 && (
-                        <FrogComponent data={gameState.frog2} tint="blue" hitFlash={hitFlash2} />
+                        <FrogComponent data={gameState.frog2} tint="blue" hitFlash={hitFlash2} deathType={deathBurst?.type} />
                     )}
 
+                    {/* Death Effects */}
+                    {deathBurst && deathBurst.type === 'road' && (
+                        <DeathBurst key={`burst-${deathBurst.id}`} {...deathBurst} />
+                    )}
+                    {deathBurst && deathBurst.type === 'river' && (
+                        <WaterRipple key={`ripple-${deathBurst.id}`} x={deathBurst.x} y={deathBurst.y} />
+                    )}
+
+                    {/* Screen Flash */}
                     {deathBurst && (
-                        <DeathBurst key={deathBurst.id} {...deathBurst} />
+                        <motion.div
+                            key={`flash-${deathBurst.id}`}
+                            style={{
+                                position:      'absolute',
+                                inset:         0,
+                                background:    deathBurst.type === 'road'
+                                    ? 'rgba(255, 80, 0, 0.45)'
+                                    : 'rgba(0, 90, 200, 0.35)',
+                                pointerEvents: 'none',
+                                zIndex:        70,
+                            }}
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: 0 }}
+                            transition={{ duration: deathBurst.type === 'road' ? 0.2 : 0.45 }}
+                        />
                     )}
 
                     <GameOverOverlay isVisible={isDead} onReset={handleRestart} onMenu={handleBackToMenu}
@@ -191,7 +222,8 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
 
             {isPaused && (
                 <PauseMenu isPaused={isPaused} onResume={handleResume}
-                           onMenu={handleBackToMenu} onRestart={handleRestart} />
+                           onMenu={handleBackToMenu} onRestart={handleRestart}
+                           settings={gameSettings} onSettingsChange={setGameSettings} />
             )}
 
             <p className="text-xs text-white/30 tracking-wide m-0">
@@ -204,6 +236,12 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     : <span className="font-[family-name:var(--font-orbitron)] text-[#50ff8c]/50 text-sm">↑ ↓ ← → pour déplacer la grenouille</span>
                 }
             </p>
+            {settings.mode === 'network' && (
+                <p className="text-xs text-white/30 tracking-wide m-0 mt-2">
+                    <span className="text-[#80cfff]/60">Room:</span>
+                    <span className="ml-2 text-white/80">{getCurrentRoomId() ?? '—'}</span>
+                </p>
+            )}
         </div>
     );
 };

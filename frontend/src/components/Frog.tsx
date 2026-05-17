@@ -9,14 +9,14 @@ import jump4 from '../sprites/frog_jump_4.png';
 import jump5 from '../sprites/frog_jump_5.png';
 import jump6 from '../sprites/frog_jump_6.png';
 
-// ── Sprites de saut ──────────────────────────────────────────────────────────
 const JUMP_FRAMES: string[] = [jump1, jump2, jump3, jump4, jump5, jump6];
-const FRAME_DURATION_MS     = 18;   // durée d'une frame (ms) — 6×18 = 108ms total
-const JUMP_THRESHOLD        = 20;   // px delta minimum pour considérer un vrai saut
+const FRAME_DURATION_MS     = 18;
+const JUMP_THRESHOLD        = 20;
 
 interface FrogProps {
-    data:      FrogType;
-    tint?:     'green' | 'blue';
+    data: FrogType;
+    tint?: 'green' | 'blue';
+    deathType?: 'road' | 'river';
     hitFlash?: boolean;
 }
 
@@ -25,41 +25,25 @@ function rotationFromDelta(dx: number, dy: number): number {
     return dy > 0 ? 180 : 0;
 }
 
-/**
- * Grenouille animée.
- *
- * Stratégie sprite :
- *  Le défilement des frames de saut est fait en MANIPULATION DIRECTE du DOM
- *  (divRef.current.style.backgroundImage) via une chaîne de setTimeout.
- *  Cela évite complètement le cycle de rendu React (qui peut batcher/retarder
- *  les setState), garantissant un timing précis indépendant du scheduler React.
- *
- * Animation d'arrivée (WIN) :
- *  Les grenouilles garées (parkedFrogs) sont montées avec l'état WIN.
- *  Framer Motion's `initial` / `animate` se déclenchent au MOUNT → pop d'entrée
- *  one-shot, sans animation continue.
- */
-const Frog: React.FC<FrogProps> = ({ data, tint, hitFlash }) => {
+const Frog: React.FC<FrogProps> = ({ data, tint, hitFlash, deathType }) => {
     const divRef       = useRef<HTMLDivElement>(null);
     const prevPos      = useRef({ x: data.x, y: data.y });
     const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isJumpingRef = useRef(false);
 
     const [rotation, setRotation] = useState(0);
+    const [isJumping, setIsJumping] = useState(false);
 
     const isDead = data.state === 'DEAD';
     const isWin  = data.state === 'WIN';
 
-    // ── Nettoyage au démontage ───────────────────────────────────────────────
     useEffect(() => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, []);
 
-    // ── Animation de saut — manipulation directe du DOM ─────────────────────
     const startJump = useCallback((dx: number, dy: number) => {
-        // Annule une animation en cours
         if (timerRef.current) {
             clearTimeout(timerRef.current);
             timerRef.current = null;
@@ -67,31 +51,27 @@ const Frog: React.FC<FrogProps> = ({ data, tint, hitFlash }) => {
 
         setRotation(rotationFromDelta(dx, dy));
         isJumpingRef.current = true;
+        setIsJumping(true);
 
         let frame = 0;
 
         const advance = () => {
             if (!divRef.current || !isJumpingRef.current) return;
-
-            // Mise à jour directe du style sans passer par React
             divRef.current.style.backgroundImage = `url(${JUMP_FRAMES[frame]})`;
-
             frame++;
             if (frame < JUMP_FRAMES.length) {
                 timerRef.current = setTimeout(advance, FRAME_DURATION_MS);
             } else {
-                // Animation terminée → retour au sprite idle
                 isJumpingRef.current = false;
+                setIsJumping(false);
                 divRef.current.style.backgroundImage = `url(${frogSprite})`;
                 timerRef.current = null;
             }
         };
 
-        // Démarre immédiatement sur la frame 0
         advance();
     }, []);
 
-    // ── Détection de saut (ignoré si mort ou parked/WIN) ────────────────────
     useEffect(() => {
         if (isDead || isWin) {
             prevPos.current = { x: data.x, y: data.y };
@@ -102,25 +82,33 @@ const Frog: React.FC<FrogProps> = ({ data, tint, hitFlash }) => {
         const dy = data.y - prevPos.current.y;
         prevPos.current = { x: data.x, y: data.y };
 
-        // Saut intentionnel : déclenche l'animation de sprite
         if (Math.abs(dx) > JUMP_THRESHOLD || Math.abs(dy) > JUMP_THRESHOLD) {
             startJump(dx, dy);
         }
-        // Dérive passive : on ne fait rien (isJumpingRef reste inchangé)
     }, [data.x, data.y, isDead, isWin, startJump]);
 
-    // ── Filtres CSS ──────────────────────────────────────────────────────────
     const tintFilter = tint === 'blue' ? 'hue-rotate(200deg) saturate(1.5)' : '';
-    const filter     = `drop-shadow(0 2px 8px rgba(0,0,0,0.85)) ${tintFilter}`;
+
+    const filter = isDead
+        ? deathType === 'river'
+            ? `drop-shadow(0 0 12px #0088ff) saturate(0.1) brightness(0.35) hue-rotate(160deg) ${tintFilter}`
+            : `drop-shadow(0 0 16px #ff6600) saturate(0) brightness(0.4) sepia(1) hue-rotate(-20deg) ${tintFilter}`
+        : isWin
+        ? `drop-shadow(0 0 14px #44ff88) brightness(1.3) ${tintFilter}`
+        : `drop-shadow(0 2px 6px rgba(0,0,0,0.9)) ${tintFilter}`;
+
+    const deathRotate = deathType === 'river'
+        ? [rotation, rotation + 10, rotation - 7, rotation + 4, rotation]
+        : [rotation, rotation - 25, rotation + 50, rotation + 360 + 180];
+
+    const deathScale = deathType === 'river'
+        ? [1, 0.85, 0.65, 0.35, 0.05]
+        : [1, 1.4, 0.08, 0];
+
+    const deathDuration = deathType === 'river' ? 0.9 : 0.42;
 
     const flashClass = hitFlash ? 'animate-dead-flash' : '';
 
-    // ── Rendu ────────────────────────────────────────────────────────────────
-    //
-    // Les parked frogs (isWin=true) sont MONTÉS une seule fois.
-    // Framer Motion joue initial→animate au mount → pop d'entrée one-shot.
-    // La grenouille active n'a jamais l'état WIN, donc pas d'animation de mount.
-    //
     return (
         <motion.div
             ref={divRef}
@@ -137,22 +125,22 @@ const Frog: React.FC<FrogProps> = ({ data, tint, hitFlash }) => {
                 filter:           filter,
                 zIndex:           50,
             }}
-            // initial/animate ne jouent qu'au MOUNT pour les parked frogs (WIN)
-            // La grenouille active a initial={false} pour sauter le mount
             initial={isWin ? { scale: 0, opacity: 0 } : false}
             animate={{
-                x:       data.x,
-                y:       data.y,
-                rotate:  rotation,
-                opacity: isDead ? 0 : 1,
-                scale:   1,
+                x: data.x,
+                y: data.y,
+                rotate: isDead ? deathRotate : rotation,
+                scale: isDead
+                    ? deathScale
+                    : isJumping
+                    ? [1, 0.7, 1.2, 1]
+                    : 1,
             }}
             transition={{
-                x:       { duration: 0 },
-                y:       { duration: 0 },
-                rotate:  { duration: 0 },
-                opacity: { duration: 0.05 },
-                scale:   { duration: 0 },
+                x:      { type: 'spring', stiffness: 1200, damping: 40 },
+                y:      { type: 'spring', stiffness: 1200, damping: 40 },
+                rotate: { duration: isDead ? deathDuration : 0.08 },
+                scale:  { duration: isDead ? deathDuration : 0.10, ease: isDead ? 'easeIn' : 'easeOut' },
             }}
         />
     );

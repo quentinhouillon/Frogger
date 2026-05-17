@@ -7,12 +7,13 @@ import ScoresScreen   from './components/menu/ScoresScreen';
 import SettingsScreen from './components/menu/SettingsScreen';
 import CreditsScreen  from './components/menu/CreditsScreen';
 
-import { wsService } from './services/WebsocketService';
+import { getWebSocketUrl, wsService } from './services/WebsocketService';
+import soundManager from './services/SoundService';
 import type { GameSettings, GameMode, HighScoreEntry, GameState } from './types/GameTypes';
 
 export type Screen = 'menu' | 'game' | 'scores' | 'settings' | 'credits';
 
-const DEFAULT_SETTINGS: GameSettings = { slotsCount: 5, difficulty: 'normal', mode: 'single' };
+const DEFAULT_SETTINGS: GameSettings = { slotsCount: 5, difficulty: 'normal', mode: 'single', musicVolume: 35, sfxVolume: 100 };
 
 function App() {
     const [screen,     setScreen]     = useState<Screen>('menu');
@@ -23,12 +24,32 @@ function App() {
     const pendingMode = useRef<GameMode>('single');
 
     useEffect(() => {
-        wsService.connect('ws://localhost:8080');
+        // Charge les sons une seule fois au démarrage
+        soundManager.loadAllSounds();
+        soundManager.setMusicVolume(settings.musicVolume);
+        soundManager.setSfxVolume(settings.sfxVolume);
+        wsService.connect(getWebSocketUrl());
         const unsub = wsService.subscribe((data: GameState) => {
             if (data.highScores) setHighScores(data.highScores);
         });
         return () => unsub();
     }, []);
+
+    // Met à jour les volumes quand ils changent
+    useEffect(() => {
+        soundManager.setMusicVolume(settings.musicVolume);
+        soundManager.setSfxVolume(settings.sfxVolume);
+    }, [settings.musicVolume, settings.sfxVolume]);
+
+    // Gère la musique: reste jouée pour tous les écrans sauf le jeu (évite relances entre sous-menus)
+    useEffect(() => {
+        if (screen === 'game') {
+            soundManager.stopSound('soundtrack');
+        } else {
+            // playSound est idempotent (ne relance pas si déjà en cours)
+            soundManager.playSound('soundtrack');
+        }
+    }, [screen]);
 
     const navigate    = (s: Screen) => setScreen(s);
 
