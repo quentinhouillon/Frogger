@@ -5,6 +5,7 @@ import type { GameState, GameSettings } from '../types/GameTypes';
 const LANE_HEIGHT = 50;
 
 export interface DeathBurstState {
+    id: number;
     x: number;
     y: number;
     type: 'road' | 'river';
@@ -21,6 +22,11 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
     const [opponentLeft, setOpponentLeft]     = useState(false);
     const prevFrogState                       = useRef<string>('LIVING');
     const [deathBurst, setDeathBurst]         = useState<DeathBurstState | null>(null);
+    const [hitFlash, setHitFlash]             = useState(false);
+    const [hitFlash2, setHitFlash2]           = useState(false);
+    const prevFrogState2                      = useRef<string>('LIVING');
+    const hitTimer                            = useRef<any>(null);
+    const hitTimer2                           = useRef<any>(null);
     const settingsRef                         = useRef(settings);
     settingsRef.current                       = settings;
 
@@ -63,23 +69,64 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
         };
     }, []);
 
+    const prevLifes                           = useRef<number>(-1);
+    const prevLifes2                          = useRef<number>(-1);
+    const prevFrogRef                         = useRef<any>(null);
+    const prevFrog2Ref                        = useRef<any>(null);
+
     /* ── Détection de mort ────────────────────────────────────────────── */
     useEffect(() => {
         if (!gameState) return;
-        const { frog, lanes } = gameState;
+        const { frog, frog2, lanes, lifes, lifes2 } = gameState;
 
-        if (frog.state === 'DEAD' && prevFrogState.current !== 'DEAD') {
+        if (prevLifes.current === -1) {
+            prevLifes.current = lifes;
+            prevLifes2.current = lifes2;
+            prevFrogRef.current = frog;
+            prevFrog2Ref.current = frog2;
+            return;
+        }
+
+        // --- Frog 1 ---
+        const isDead1 = frog.state === 'DEAD' && prevFrogState.current !== 'DEAD';
+        const lostLife1 = lifes < prevLifes.current;
+        
+        if (isDead1 || lostLife1) {
+            const deathX = isDead1 ? frog.x : (prevFrogRef.current?.x ?? frog.x);
+            const deathY = isDead1 ? frog.y : (prevFrogRef.current?.y ?? frog.y);
+
             const inRiver = lanes.some(lane =>
                 lane.laneType === 'RIVER' &&
-                frog.y >= lane.positionY &&
-                frog.y <  lane.positionY + LANE_HEIGHT
+                deathY >= lane.positionY &&
+                deathY <  lane.positionY + LANE_HEIGHT
             );
-            setDeathBurst({ x: frog.x, y: frog.y, type: inRiver ? 'river' : 'road' });
-            const t = setTimeout(() => setDeathBurst(null), 1500);
-            return () => clearTimeout(t);
+            
+            setDeathBurst({ id: Date.now(), x: deathX, y: deathY, type: inRiver ? 'river' : 'road' });
+            setTimeout(() => setDeathBurst(null), 1500);
+
+            if (hitTimer.current) clearTimeout(hitTimer.current);
+            setHitFlash(true);
+            hitTimer.current = setTimeout(() => setHitFlash(false), 900); // 0.3s * 3 = 900ms pour l'anim CSS
         }
 
         prevFrogState.current = frog.state;
+        prevLifes.current = lifes;
+        prevFrogRef.current = frog;
+
+        // --- Frog 2 (multijoueur) ---
+        if (frog2) {
+            const isDead2 = frog2.state === 'DEAD' && prevFrogState2.current !== 'DEAD';
+            const lostLife2 = lifes2 < prevLifes2.current;
+            
+            if (isDead2 || lostLife2) {
+                if (hitTimer2.current) clearTimeout(hitTimer2.current);
+                setHitFlash2(true);
+                hitTimer2.current = setTimeout(() => setHitFlash2(false), 900);
+            }
+            prevFrogState2.current = frog2.state;
+            prevLifes2.current = lifes2;
+            prevFrog2Ref.current = frog2;
+        }
     }, [gameState]);
 
     /* ── Clavier ──────────────────────────────────────────────────────── */
@@ -136,5 +183,5 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
         wsService.send(startCmd(settingsRef.current));
     };
 
-    return { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft };
+    return { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft, hitFlash, hitFlash2 };
 }

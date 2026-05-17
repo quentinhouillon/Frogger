@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500&display=swap');
+@import "tailwindcss";
 
 /* ── Design tokens ────────────────────────────── */
 @theme {
@@ -43,8 +43,13 @@
 }
 
 @keyframes dead-flash {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.2; }
+  0%   { opacity: 1;    filter: brightness(1);   }
+  15%  { opacity: 0.1;  filter: brightness(2);   }
+  30%  { opacity: 1;    filter: brightness(1);   }
+  50%  { opacity: 0.1;  filter: brightness(2);   }
+  65%  { opacity: 1;    filter: brightness(1);   }
+  82%  { opacity: 0.1;  filter: brightness(2);   }
+  100% { opacity: 1;    filter: brightness(1);   }
 }
 
 @keyframes flicker {

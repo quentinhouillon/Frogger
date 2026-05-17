@@ -10,6 +10,7 @@ import HUD           from './components/hud/HUD';
 import PauseMenu     from './components/pauseMenu/PauseMenu';
 import { GameOverOverlay, VictoryOverlay } from './components/overlays/GameOverlays';
 import FrogComponent from './components/Frog';
+import ParkedFrog    from './components/ParkedFrog';
 import Obstacle      from './components/Obstacles';
 import DeathBurst    from './components/effects/DeathBurst';
 
@@ -33,7 +34,7 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
     const [isPaused, setIsPaused] = useState(false);
-    const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft } =
+    const { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft, hitFlash, hitFlash2 } =
         useGameLogic(settings, isPaused);
 
     // Retour au menu si l'adversaire se déconnecte en mode réseau
@@ -159,22 +160,22 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
 
                     {/* Grenouilles garées J1 */}
                     {gameState.parkedFrogs?.map((pf, i) => (
-                        <FrogComponent key={`p1-${i}`} data={pf} />
+                        <ParkedFrog key={`p1-${i}`} data={pf} />
                     ))}
 
                     {/* Grenouilles garées J2 */}
                     {isMulti && gameState.parkedFrogs2?.map((pf, i) => (
-                        <FrogComponent key={`p2-${i}`} data={pf} />
+                        <ParkedFrog key={`p2-${i}`} data={pf} tint="blue" />
                     ))}
 
                     {/* Grenouilles actives */}
-                    <FrogComponent data={gameState.frog} />
+                    <FrogComponent data={gameState.frog} hitFlash={hitFlash} />
                     {isMulti && gameState.frog2 && (
-                        <FrogComponent data={gameState.frog2} tint="blue" />
+                        <FrogComponent data={gameState.frog2} tint="blue" hitFlash={hitFlash2} />
                     )}
 
                     {deathBurst && (
-                        <DeathBurst key={`${deathBurst.x}-${deathBurst.y}`} {...deathBurst} />
+                        <DeathBurst key={deathBurst.id} {...deathBurst} />
                     )}
 
                     <GameOverOverlay isVisible={isDead} onReset={handleRestart} onMenu={handleBackToMenu}
