@@ -4,7 +4,7 @@ import frogger.controller.FroggerWebSocket;
 
 public class App {
     public static void main(String[] args) {
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "1234"));
         FroggerWebSocket froggerWebSocket = new FroggerWebSocket(port);
         froggerWebSocket.start();
 

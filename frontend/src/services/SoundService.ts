@@ -62,7 +62,7 @@ const soundManager = {
     if (name === 'soundtrack') {
       sound.stop();
     }
-    return sound.play();
+    return sound.play() as number | undefined;
   },
 
   stopSound(name: string): void {

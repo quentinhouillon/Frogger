@@ -11,10 +11,10 @@ export function getWebSocketUrl() {
 
     if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${protocol}//${window.location.hostname}:8080`;
+        return `${protocol}//${window.location.hostname}:1234`;
     }
 
-    return 'ws://localhost:8080';
+    return 'ws://localhost:1234';
 }
 
 class WebSocketService {
@@ -23,10 +23,29 @@ class WebSocketService {
     private connectedHandlers: Set<VoidHandler> = new Set();
     private currentUrl:       string | null    = null;
     private reconnectTimer:   ReturnType<typeof setTimeout> | null = null;
+    private roomId: string | null = null;
+
+    constructor() {
+        // Restore previously used roomId (if any) so reconnects reuse the same room.
+        // Use sessionStorage (per onglet) instead of localStorage to avoid different
+        // tabs sharing the same room by default.
+        try {
+            const stored = sessionStorage.getItem('frogger_roomId');
+            if (stored) this.roomId = stored;
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
 
     connect(url: string) {
         this.currentUrl = url;
-        this._open(url);
+        this._open(this.buildUrlWithRoom(url));
+    }
+
+    private buildUrlWithRoom(url: string) {
+        if (!this.roomId) return url;
+        const sep = url.includes('?') ? '&' : '?';
+        return `${url}${sep}room=${encodeURIComponent(this.roomId)}`;
     }
 
     private _open(url: string) {
@@ -54,6 +73,11 @@ class WebSocketService {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+                // Room assignment message from server
+                if (data && data.type === 'room' && typeof data.roomId === 'string') {
+                    this.roomId = data.roomId;
+                    try { if (this.roomId) sessionStorage.setItem('frogger_roomId', this.roomId); } catch (e) { /* ignore */ }
+                }
                 this.listeners.forEach(l => l(data));
             } catch (e) {
                 console.error('Erreur de parsing JSON', e);
@@ -64,7 +88,8 @@ class WebSocketService {
             console.log(`WebSocket déconnecté. Reconnexion dans ${RECONNECT_DELAY_MS}ms...`);
             if (this.socket === ws) this.socket = null;
             if (this.currentUrl) {
-                this.reconnectTimer = setTimeout(() => this._open(this.currentUrl!), RECONNECT_DELAY_MS);
+                // Use room-aware URL on reconnect
+                this.reconnectTimer = setTimeout(() => this._open(this.buildUrlWithRoom(this.currentUrl!)), RECONNECT_DELAY_MS);
             }
         };
 
@@ -110,3 +135,7 @@ class WebSocketService {
 }
 
 export const wsService = new WebSocketService();
+// Expose a typed getter for the current room id
+export function getCurrentRoomId(): string | null {
+    return wsService['roomId'] ?? null;
+}

@@ -14,8 +14,8 @@ WORKDIR /opt/frogger
 
 COPY --from=build /workspace/backend/app/build/install/app ./
 
-EXPOSE 8080
+EXPOSE 1234
 
-ENV PORT=8080
+ENV PORT=1234
 
 CMD ["/opt/frogger/bin/app"]

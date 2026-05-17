@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameLogic } from './hooks/useGameLogic';
-import { wsService } from './services/WebsocketService';
+import { wsService, getCurrentRoomId } from './services/WebsocketService';
 import soundManager from './services/SoundService';
 import type { GameSettings } from './types/GameTypes';
 
@@ -242,6 +242,12 @@ const Game: React.FC<GameProps> = ({ settings, onBackToMenu }) => {
                     : <span className="font-[family-name:var(--font-orbitron)] text-[#50ff8c]/50 text-sm">↑ ↓ ← → pour déplacer la grenouille</span>
                 }
             </p>
+            {settings.mode === 'network' && (
+                <p className="text-xs text-white/30 tracking-wide m-0 mt-2">
+                    <span className="text-[#80cfff]/60">Room:</span>
+                    <span className="ml-2 text-white/80">{getCurrentRoomId() ?? '—'}</span>
+                </p>
+            )}
         </div>
     );
 };
