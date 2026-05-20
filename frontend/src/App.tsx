@@ -3,6 +3,7 @@ import './App.css';
 
 import Game           from './Game';
 import MenuScreen     from './components/menu/MenuScreen';
+import OnlineLobbyScreen from './components/menu/OnlineLobbyScreen';
 import ScoresScreen   from './components/menu/ScoresScreen';
 import SettingsScreen from './components/menu/SettingsScreen';
 import CreditsScreen  from './components/menu/CreditsScreen';
@@ -11,7 +12,7 @@ import { getWebSocketUrl, wsService } from './services/WebsocketService';
 import soundManager from './services/SoundService';
 import type { GameSettings, GameMode, HighScoreEntry, GameState } from './types/GameTypes';
 
-export type Screen = 'menu' | 'game' | 'scores' | 'settings' | 'credits';
+export type Screen = 'menu' | 'game' | 'scores' | 'settings' | 'credits' | 'onlineLobby';
 
 const DEFAULT_SETTINGS: GameSettings = { slotsCount: 5, difficulty: 'normal', mode: 'single', musicVolume: 35, sfxVolume: 100 };
 
@@ -54,9 +55,17 @@ function App() {
     const navigate    = (s: Screen) => setScreen(s);
 
     const handlePlay  = (mode: GameMode) => {
-        pendingMode.current = mode;
-        setSettings(s => ({ ...s, mode }));
-        setScreen('game');
+        // Si c'est du multiplayer en ligne, aller au lobby d'abord
+        if (mode === 'network') {
+            setScreen('onlineLobby');
+            pendingMode.current = mode;
+            setSettings(s => ({ ...s, mode }));
+        } else {
+            // Sinon lancer le jeu directement
+            pendingMode.current = mode;
+            setSettings(s => ({ ...s, mode }));
+            setScreen('game');
+        }
     };
 
     switch (screen) {
@@ -68,6 +77,11 @@ function App() {
             return <SettingsScreen settings={settings} onChange={setSettings} onBack={() => navigate('menu')} />;
         case 'credits':
             return <CreditsScreen onBack={() => navigate('menu')} />;
+        case 'onlineLobby':
+            return <OnlineLobbyScreen
+                    onStartGame={() => navigate('game')}
+                    onBack={() => navigate('menu')}
+                />;
         case 'game':
             return <Game
                 settings={{ ...settings, mode: pendingMode.current }}

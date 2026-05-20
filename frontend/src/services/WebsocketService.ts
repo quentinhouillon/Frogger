@@ -26,15 +26,7 @@ class WebSocketService {
     private roomId: string | null = null;
 
     constructor() {
-        // Restore previously used roomId (if any) so reconnects reuse the same room.
-        // Use sessionStorage (per onglet) instead of localStorage to avoid different
-        // tabs sharing the same room by default.
-        try {
-            const stored = sessionStorage.getItem('frogger_roomId');
-            if (stored) this.roomId = stored;
-        } catch (e) {
-            // ignore storage errors
-        }
+        // roomId is kept only in memory for this session
     }
 
     connect(url: string) {
@@ -76,7 +68,6 @@ class WebSocketService {
                 // Room assignment message from server
                 if (data && data.type === 'room' && typeof data.roomId === 'string') {
                     this.roomId = data.roomId;
-                    try { if (this.roomId) sessionStorage.setItem('frogger_roomId', this.roomId); } catch (e) { /* ignore */ }
                 }
                 this.listeners.forEach(l => l(data));
             } catch (e) {
@@ -131,6 +122,24 @@ class WebSocketService {
         }
         this.socket?.close();
         this.socket = null;
+    }
+
+    /**
+     * Change vers une nouvelle room et reconneecte
+     */
+    setRoom(newRoomId: string) {
+        this.roomId = newRoomId;
+        
+        // Fermer l'ancienne connexion pour forcer une nouvelle
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        
+        // Reconnecter avec la nouvelle room
+        if (this.currentUrl) {
+            this._open(this.buildUrlWithRoom(this.currentUrl));
+        }
     }
 }
 

@@ -58,6 +58,13 @@ export interface ScoreBreakdown {
     total:         number;  // score final
 }
 
+export interface LobbyPlayer {
+    id: string;
+    name: string;
+    isReady: boolean;
+    isCurrentPlayer: boolean;
+}
+
 export interface GameState {
     screenWidth:    number;
     screenHeight:   number;

@@ -63,7 +63,11 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
             setGameState(data as GameState);
         });
 
-        const openHandler = () => wsService.send(startCmd(settingsRef.current));
+        const openHandler = () => {
+            if (settingsRef.current.mode !== 'network') {
+                wsService.send(startCmd(settingsRef.current));
+            }
+        };
         wsService.onConnected(openHandler);
 
         return () => {
@@ -208,7 +212,9 @@ export function useGameLogic(settings: GameSettings, isPaused = false) {
 
     const resetGame = () => {
         setOpponentLeft(false);
-        wsService.send(startCmd(settingsRef.current));
+        if (settingsRef.current.mode !== 'network') {
+            wsService.send(startCmd(settingsRef.current));
+        }
     };
 
     return { gameState, scale, deathBurst, resetGame, myPlayerNumber, opponentLeft, hitFlash, hitFlash2 };

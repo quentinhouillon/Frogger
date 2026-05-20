@@ -1,7 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const LoadingScreen: React.FC = () => {
+interface Props {
+    message?: string;
+}
+
+const LoadingScreen: React.FC<Props> = ({ message = 'Connexion au serveur Frogger…' }) => {
     return (
         <div className="min-h-screen w-screen flex items-center justify-center"
              style={{ background: 'radial-gradient(ellipse at top, #0d1b2a 0%, #000508 100%)' }}>
@@ -14,7 +18,7 @@ const LoadingScreen: React.FC = () => {
                     🐸
                 </motion.div>
                 <p className="font-[family-name:var(--font-orbitron)] text-base tracking-widest text-[#50ff8c]/70 m-0">
-                    Connexion au serveur Frogger…
+                    {message}
                 </p>
                 <div className="flex gap-2">
                     {[0, 1, 2].map(i => (
