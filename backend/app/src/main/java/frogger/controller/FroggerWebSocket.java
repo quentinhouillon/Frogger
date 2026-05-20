@@ -26,6 +26,41 @@ public class FroggerWebSocket extends WebSocketServer {
     private final Gson gson;
     private final int port;
 
+    // Lobby simple: roomId -> état des joueurs prêts
+    private static class LobbyState {
+        private final Map<WebSocket, Boolean> readyBySocket = new ConcurrentHashMap<>();
+
+        void addPlayer(WebSocket conn) {
+            readyBySocket.put(conn, false);
+        }
+
+        void removePlayer(WebSocket conn) {
+            readyBySocket.remove(conn);
+        }
+
+        void setReady(WebSocket conn, boolean ready) {
+            readyBySocket.put(conn, ready);
+        }
+
+        int playerCount() {
+            return readyBySocket.size();
+        }
+
+        int readyCount() {
+            return (int) readyBySocket.values().stream().filter(Boolean::booleanValue).count();
+        }
+
+        boolean isComplete() {
+            return playerCount() == 2 && readyCount() == 2;
+        }
+
+        boolean isEmpty() {
+            return readyBySocket.isEmpty();
+        }
+    }
+
+    private final Map<String, LobbyState> lobbyStates = new ConcurrentHashMap<>();
+
     // Per-room state container
     private static class RoomState {
         volatile NetState netState = NetState.IDLE;
@@ -53,31 +88,24 @@ public class FroggerWebSocket extends WebSocketServer {
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println("Connexion : " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
 
-        // Assign the connection to a room. If the client provided a room query param
-        // (e.g. ws://host:8080/?room=abc) we join that room; otherwise create a private
-        // one.
         String resource = handshake.getResourceDescriptor();
-        String providedRoom = null;
-        if (resource != null && resource.contains("?")) {
-            String q = resource.substring(resource.indexOf('?') + 1);
-            for (String part : q.split("&")) {
-                String[] kv = part.split("=", 2);
-                if (kv.length == 2 && "room".equals(kv[0])) {
-                    providedRoom = kv[1];
-                    break;
-                }
-            }
+        String roomId = null;
+        if (resource != null && resource.contains("?room=")) {
+            int idx = resource.indexOf("?room=");
+            roomId = resource.substring(idx + 6);
         }
-        String roomId = providedRoom != null && !providedRoom.isEmpty() ? providedRoom : UUID.randomUUID().toString();
+        if (roomId == null || roomId.isEmpty()) {
+            roomId = UUID.randomUUID().toString();
+        }
+
         joinRoom(conn, roomId);
-        // Inform the client of its room id (simple JSON message)
         conn.send("{\"type\":\"room\",\"roomId\":\"" + roomId + "\"}");
+
+        registerLobbyPlayer(roomId, conn);
 
         RoomState rs = roomStates.computeIfAbsent(roomId, k -> new RoomState());
 
-        if (rs.netState == NetState.WAITING
-                && rs.player1Socket != null && rs.player1Socket.isOpen()) {
-            // Joueur 2 rejoint la session réseau
+        if (rs.netState == NetState.WAITING && rs.player1Socket != null && rs.player1Socket.isOpen()) {
             rs.player2Socket = conn;
             rs.netState = NetState.PLAYING;
             rs.paused = false;
@@ -86,25 +114,24 @@ public class FroggerWebSocket extends WebSocketServer {
                 rs.player1Socket.send("{\"type\":\"init\",\"playerNumber\":1}");
             rs.player2Socket.send("{\"type\":\"init\",\"playerNumber\":2}");
             System.out.println("Joueur 2 connecté — partie réseau démarrée.");
-
         } else if (rs.netState == NetState.IDLE) {
             rs.gameMap = new GameMap();
             rs.scoreSaved = false;
             rs.paused = false;
         }
-        // netState == PLAYING : connexion supplémentaire ignorée
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         System.out.println("Déconnexion : " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
 
-        // Remember room before removing mapping
         String rid = connRoom.get(conn);
-        // Leave room and cleanup mapping
         leaveRoom(conn);
 
         if (rid != null) {
+            // Retirer du lobby
+            unregisterLobbyPlayer(rid, conn);
+
             RoomState rs = roomStates.get(rid);
             if (rs != null && (conn == rs.player1Socket || conn == rs.player2Socket)) {
                 WebSocket other = (conn == rs.player1Socket) ? rs.player2Socket : rs.player1Socket;
@@ -117,7 +144,6 @@ public class FroggerWebSocket extends WebSocketServer {
                 rs.gameMap = new GameMap();
                 rs.scoreSaved = false;
                 rs.paused = false;
-                System.out.println("Session réseau réinitialisée.");
             }
         }
     }
@@ -125,13 +151,22 @@ public class FroggerWebSocket extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
 
-        // Ensure connection has a room
         String rid = connRoom.get(conn);
         if (rid == null) {
             rid = UUID.randomUUID().toString();
             joinRoom(conn, rid);
         }
         RoomState rs = roomStates.computeIfAbsent(rid, k -> new RoomState());
+
+        // ── Gestion simple du lobby ────────────────────────────────
+        if ("READY".equals(message)) {
+            updateLobbyReadyState(rid, conn, true);
+            return;
+        }
+        if ("NOT_READY".equals(message)) {
+            updateLobbyReadyState(rid, conn, false);
+            return;
+        }
 
         // ── Démarrage / reset ──────────────────────────────────────────────────
         if (message.startsWith("START:") || message.startsWith("RESET:")) {
@@ -145,6 +180,9 @@ public class FroggerWebSocket extends WebSocketServer {
             String mode = p.length > 3 ? p[3] : "single";
 
             if ("network".equals(mode)) {
+                if (rs.netState == NetState.PLAYING && rs.gameMap.isMultiplayerMode()) {
+                    return;
+                }
                 rs.netState = NetState.WAITING;
                 rs.player1Socket = conn;
                 rs.player2Socket = null;
@@ -152,6 +190,7 @@ public class FroggerWebSocket extends WebSocketServer {
                 rs.gameMap.setWaitingForPlayer2(true);
                 rs.scoreSaved = false;
                 rs.paused = false;
+                lobbyStates.remove(rid);
                 System.out.println("Mode réseau : en attente du joueur 2...");
             } else {
                 rs.netState = NetState.IDLE;
@@ -164,7 +203,7 @@ public class FroggerWebSocket extends WebSocketServer {
             return;
         }
 
-        // ── Pause / reprise (fonctionnalité de leur branche) ───────────────────
+        // ── Pause / reprise ───────────────────────────────────────
         if ("PAUSE".equals(message)) {
             rs.paused = true;
             return;
@@ -281,6 +320,104 @@ public class FroggerWebSocket extends WebSocketServer {
                     s.send(message);
             }
         }
+    }
+
+    /**
+     * Envoie l'état du lobby à tous les clients
+     */
+    private void broadcastLobbyState(String roomId) {
+        LobbyState lobbyState = lobbyStates.get(roomId);
+        if (lobbyState == null)
+            return;
+
+        int count = lobbyState.playerCount();
+        int ready = lobbyState.readyCount();
+
+        String msg = "{\"type\":\"lobby\",\"playerCount\":" + count + ",\"readyCount\":" + ready + "}";
+        sendToRoom(roomId, msg);
+    }
+
+    /**
+     * Signal que le jeu peut démarrer
+     */
+    private void broadcastLobbyReady(String roomId) {
+        sendToRoom(roomId, "{\"type\":\"lobbyReady\"}");
+    }
+
+    private LobbyState getLobbyState(String roomId) {
+        return lobbyStates.computeIfAbsent(roomId, k -> new LobbyState());
+    }
+
+    private void registerLobbyPlayer(String roomId, WebSocket conn) {
+        getLobbyState(roomId).addPlayer(conn);
+        broadcastLobbyState(roomId);
+    }
+
+    private void unregisterLobbyPlayer(String roomId, WebSocket conn) {
+        LobbyState lobbyState = lobbyStates.get(roomId);
+        if (lobbyState == null) {
+            return;
+        }
+
+        lobbyState.removePlayer(conn);
+        if (lobbyState.isEmpty()) {
+            lobbyStates.remove(roomId);
+        } else {
+            broadcastLobbyState(roomId);
+        }
+    }
+
+    private void updateLobbyReadyState(String roomId, WebSocket conn, boolean ready) {
+        LobbyState lobbyState = getLobbyState(roomId);
+        lobbyState.setReady(conn, ready);
+        broadcastLobbyState(roomId);
+
+        if (ready && lobbyState.isComplete()) {
+            startNetworkMatch(roomId);
+            broadcastLobbyReady(roomId);
+        }
+    }
+
+    private void startNetworkMatch(String roomId) {
+        RoomState rs = roomStates.computeIfAbsent(roomId, k -> new RoomState());
+        if (rs.netState == NetState.PLAYING && rs.gameMap != null && rs.gameMap.isMultiplayerMode()) {
+            return;
+        }
+
+        Set<WebSocket> sockets = rooms.get(roomId);
+        if (sockets == null) {
+            return;
+        }
+
+        WebSocket player1 = null;
+        WebSocket player2 = null;
+        for (WebSocket socket : sockets) {
+            if (socket == null || !socket.isOpen()) {
+                continue;
+            }
+            if (player1 == null) {
+                player1 = socket;
+            } else {
+                player2 = socket;
+                break;
+            }
+        }
+
+        if (player1 == null || player2 == null) {
+            return;
+        }
+
+        rs.netState = NetState.PLAYING;
+        rs.player1Socket = player1;
+        rs.player2Socket = player2;
+        rs.paused = false;
+        rs.scoreSaved = false;
+        rs.gameMap = new GameMap(5, 1.0f, true);
+        rs.gameMap.setWaitingForPlayer2(false);
+
+        player1.send("{\"type\":\"init\",\"playerNumber\":1}");
+        player2.send("{\"type\":\"init\",\"playerNumber\":2}");
+        System.out.println("Partie réseau à 2 joueurs démarrée.");
     }
 
     private int parseSlots(String s) {
